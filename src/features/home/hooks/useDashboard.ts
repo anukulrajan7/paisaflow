@@ -42,6 +42,9 @@ export function useDashboard(): DashboardState {
   const [monthOffset, setMonthOffset] = useState(0);
   const [cycleStartDay, setCycleStartDay] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
+  // Tracked "now" so the memoized period cannot go stale (clock changes,
+  // month rollover while the app is open). Refreshed on every refetch/focus.
+  const [now, setNow] = useState(() => Date.now());
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [categoriesById, setCategoriesById] = useState<Map<string, Category>>(
     () => new Map(),
@@ -51,8 +54,8 @@ export function useDashboard(): DashboardState {
   const [error, setError] = useState<string | null>(null);
 
   const period = useMemo(
-    () => monthPeriod(dayjs().add(monthOffset, 'month'), cycleStartDay),
-    [monthOffset, cycleStartDay],
+    () => monthPeriod(dayjs(now).add(monthOffset, 'month'), cycleStartDay),
+    [now, monthOffset, cycleStartDay],
   );
 
   const refetch = useCallback(() => setReloadKey(k => k + 1), []);
@@ -61,6 +64,7 @@ export function useDashboard(): DashboardState {
   // they are re-read with every explicit refetch / focus reload.
   useEffect(() => {
     let cancelled = false;
+    setNow(Date.now());
     getSettingsRepository()
       .getBudgetCycleStartDay()
       .then(startDay => {

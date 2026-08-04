@@ -4,6 +4,11 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Daily reminder notifications on Android 13+ -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- READ_SMS: on-device parsing of bank/UPI transaction alerts (auto-tracking).
+         Google Play restricts SMS permissions to default-handler/exception apps;
+         PaisaFlow is distributed for personal/sideload use, not via Play. Parsing
+         happens entirely on-device — messages never leave the phone. See README. -->
+    <uses-permission android:name="android.permission.READ_SMS" />
 
     <application
       android:name=".MainApplication"

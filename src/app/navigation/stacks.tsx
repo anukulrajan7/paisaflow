@@ -5,6 +5,8 @@ import {HomeScreen} from '../../features/home/screens/HomeScreen';
 import {TransactionsScreen} from '../../features/transactions/screens/TransactionsScreen';
 import {TransactionDetailsScreen} from '../../features/transactions/screens/TransactionDetailsScreen';
 import {AddTransactionScreen} from '../../features/transactions/screens/AddTransactionScreen';
+import {ExpenseReviewScreen} from '../../features/tracking/screens/ExpenseReviewScreen';
+import {TrackingSettingsScreen} from '../../features/tracking/screens/TrackingSettingsScreen';
 import {BudgetsScreen} from '../../features/budgets/screens/BudgetsScreen';
 import {InsightsScreen} from '../../features/insights/screens/InsightsScreen';
 import {SettingsScreen} from '../../features/settings/screens/SettingsScreen';
@@ -53,6 +55,14 @@ export function TransactionsStackNavigator() {
       <TransactionsStack.Screen
         name="TransactionDetails"
         component={TransactionDetailsScreen}
+      />
+      <TransactionsStack.Screen
+        name="ExpenseReview"
+        component={ExpenseReviewScreen}
+      />
+      <TransactionsStack.Screen
+        name="TrackingSettings"
+        component={TrackingSettingsScreen}
       />
     </TransactionsStack.Navigator>
   );

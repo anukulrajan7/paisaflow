@@ -77,10 +77,10 @@ describe('migration runner', () => {
     expect(applied).toEqual([1]);
   });
 
-  it('migration 001 creates the full schema', async () => {
+  it('migrations create the full schema', async () => {
     const db = createFakeDb();
     const applied = await runMigrations(db, MIGRATIONS);
-    expect(applied).toEqual([1]);
+    expect(applied).toEqual([1, 2]);
     for (const table of [
       'accounts',
       'categories',
@@ -90,6 +90,7 @@ describe('migration runner', () => {
       'budgets',
       'app_settings',
       'ai_summaries',
+      'detected_expenses',
     ]) {
       expect(db.getRows(table)).toEqual([]);
     }

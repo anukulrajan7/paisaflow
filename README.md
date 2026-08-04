@@ -136,6 +136,36 @@ npm run android     # build + install + launch debug app (terminal 2)
   at runtime; when denied, reminders stay unscheduled and the rest of the app
   is unaffected.
 
+## Auto-tracking (SMS, optional)
+
+Walnut/Axio-style expense detection from bank/UPI SMS alerts.
+
+- **On-device only.** The inbox is read via a tiny custom native module
+  (`android/app/src/main/java/com/paisaflow/sms/`) and every message is parsed
+  locally in `src/services/sms/smsParser.ts` (HDFC, ICICI, SBI, Axis, Kotak,
+  Paytm, PhonePe, Google Pay, generic patterns). Nothing is uploaded — there
+  is no server. OTPs and promotional messages are rejected by the parser.
+- **Review before save.** Parsed alerts land in a pending inbox
+  (`detected_expenses` table, migration 002). Open it from the inbox icon on
+  the Transactions screen. Approving creates a real transaction (guessed
+  category + default account); dismissing drops it. Nothing enters the ledger
+  automatically.
+- **Dedupe.** Each alert is hashed (`dedupe_hash`, UNIQUE); re-scans and
+  repeated messages are skipped.
+- **Manual import.** "Paste a bank message" in the review inbox runs the same
+  parser on pasted text (source `manual`) — this is the email path until
+  Gmail OAuth exists.
+- **Settings.** Settings → SMS expense detection: master toggle, permission
+  status, optional auto-scan when the review inbox opens (default off).
+- **`READ_SMS` and Google Play policy.** Play restricts SMS permissions to
+  apps whose core function requires them (default SMS/phone handlers and a
+  few exceptions). A personal expense tracker does not qualify, so PaisaFlow
+  is intended for **personal/sideload distribution**, not Play upload with
+  this permission. The permission is requested at runtime with an explanation
+  screen first; when denied, the app keeps working and manual paste still
+  functions. Remove the permission and the `sms/` module if you ever target
+  Play.
+
 ## Tests & checks
 
 ```sh

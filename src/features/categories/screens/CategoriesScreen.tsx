@@ -1,7 +1,7 @@
 import React, {useCallback, useMemo, useState} from 'react';
 import {ScrollView, StyleSheet, View} from 'react-native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {ArrowLeft, Plus, Shapes} from 'lucide-react-native';
+import {ArrowLeft, Plus} from 'lucide-react-native';
 
 import {
   AppHeader,
@@ -19,6 +19,7 @@ import {
 } from '../../../design-system/components';
 import type {SegmentedOption} from '../../../design-system/components';
 import {useTheme} from '../../../design-system/theme';
+import {EmptyCategoriesIllustration} from '../../../design-system/illustrations';
 import type {AppTheme} from '../../../design-system/tokens';
 import type {SettingsStackParamList} from '../../../app/navigation/types';
 import type {Category, CategoryType} from '../../../database/types';
@@ -118,7 +119,7 @@ export function CategoriesScreen({navigation}: Props) {
         keyboardShouldPersistTaps="handled">
         {active.length === 0 ? (
           <EmptyState
-            icon={Shapes}
+            illustration={<EmptyCategoriesIllustration />}
             title={`No ${type} categories`}
             message="Create a custom category to organise your transactions."
             actionLabel="Add category"

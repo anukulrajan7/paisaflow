@@ -1,7 +1,7 @@
 import React, {useCallback, useMemo, useState} from 'react';
 import {ScrollView, StyleSheet, View} from 'react-native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {ArrowLeft, PiggyBank, Plus} from 'lucide-react-native';
+import {ArrowLeft, Plus} from 'lucide-react-native';
 
 import {
   AppHeader,
@@ -18,6 +18,7 @@ import {
   useToast,
 } from '../../../design-system/components';
 import {useTheme} from '../../../design-system/theme';
+import {EmptyBudgetsIllustration} from '../../../design-system/illustrations';
 import type {AppTheme} from '../../../design-system/tokens';
 import type {HomeStackParamList} from '../../../app/navigation/types';
 import {getBudgetsRepository} from '../../../database/repositories';
@@ -212,7 +213,7 @@ export function BudgetsScreen({navigation}: Props) {
             </>
           ) : (
             <EmptyState
-              icon={PiggyBank}
+              illustration={<EmptyBudgetsIllustration />}
               title="No budgets yet"
               message="Set a monthly budget to keep an eye on your spending. Budgets are informational only — they never block you from adding expenses."
               actionLabel="Create overall budget"

@@ -13,6 +13,11 @@ export interface EmptyStateProps {
   title: string;
   message?: string;
   icon?: LucideIcon;
+  /**
+   * Optional spot illustration (from `design-system/illustrations`) replacing
+   * the default icon tile. Illustrations manage their own accessibility.
+   */
+  illustration?: React.ReactNode;
   actionLabel?: string;
   onAction?: () => void;
   style?: StyleProp<ViewStyle>;
@@ -23,6 +28,7 @@ export function EmptyState({
   title,
   message,
   icon: Icon = Inbox,
+  illustration,
   actionLabel,
   onAction,
   style,
@@ -36,9 +42,13 @@ export function EmptyState({
       accessibilityRole="text"
       testID={testID}
       style={[styles.root, style]}>
-      <View style={[styles.iconWrap, {borderRadius: theme.radius.pill}]}>
-        <Icon size={28} color={theme.colors.textMuted} />
-      </View>
+      {illustration ? (
+        <View style={styles.illustrationWrap}>{illustration}</View>
+      ) : (
+        <View style={[styles.iconWrap, {borderRadius: theme.radius.pill}]}>
+          <Icon size={28} color={theme.colors.textMuted} />
+        </View>
+      )}
       <Text variant="title" align="center">
         {title}
       </Text>
@@ -68,6 +78,10 @@ const createStyles = (theme: AppTheme) =>
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: theme.colors.primarySoft,
+      marginBottom: theme.spacing.xs,
+    },
+    illustrationWrap: {
+      alignItems: 'center',
       marginBottom: theme.spacing.xs,
     },
   });

@@ -1,7 +1,7 @@
 import React, {useMemo, useState} from 'react';
 import {ScrollView, StyleSheet, View} from 'react-native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {BellRing, ShieldCheck, Wallet} from 'lucide-react-native';
+import {BellRing, ShieldCheck} from 'lucide-react-native';
 
 import {
   AppScreen,
@@ -12,6 +12,11 @@ import {
   Text,
 } from '../../../design-system/components';
 import type {SelectOption} from '../../../design-system/components';
+import {
+  PreferencesIllustration,
+  RemindersIllustration,
+  WelcomeIllustration,
+} from '../../../design-system/illustrations';
 import {useTheme} from '../../../design-system/theme';
 import type {AppTheme} from '../../../design-system/tokens';
 import {getSettingsRepository} from '../../../database/repositories';
@@ -162,15 +167,8 @@ export function OnboardingScreen(_props: Props) {
         keyboardShouldPersistTaps="handled">
         {step === 0 ? (
           <View style={styles.stepBody}>
-            <View
-              style={[
-                styles.heroIcon,
-                {
-                  backgroundColor: theme.colors.primarySoft,
-                  borderRadius: theme.radius.pill,
-                },
-              ]}>
-              <Wallet size={44} color={theme.colors.primary} />
+            <View style={styles.heroIllustration}>
+              <WelcomeIllustration size={180} />
             </View>
             <Text variant="heading" align="center">
               Welcome to PaisaFlow
@@ -193,6 +191,9 @@ export function OnboardingScreen(_props: Props) {
 
         {step === 1 ? (
           <View style={styles.stepBody}>
+            <View style={styles.stepIllustration}>
+              <PreferencesIllustration size={132} />
+            </View>
             <Text variant="title">Set your preferences</Text>
             <Text variant="body" color="textSecondary">
               You can change any of these later from Settings.
@@ -227,6 +228,9 @@ export function OnboardingScreen(_props: Props) {
 
         {step === 2 ? (
           <View style={styles.stepBody}>
+            <View style={styles.stepIllustration}>
+              <RemindersIllustration size={132} />
+            </View>
             <Text variant="title">Gentle reminders</Text>
             <Text variant="body" color="textSecondary">
               A quick nudge to log your spending keeps the habit alive. Both are
@@ -326,13 +330,13 @@ const createStyles = (theme: AppTheme) =>
     stepBody: {
       gap: theme.spacing.lg,
     },
-    heroIcon: {
+    heroIllustration: {
       alignSelf: 'center',
-      width: 96,
-      height: 96,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginTop: theme.spacing.xxl,
+      marginTop: theme.spacing.xl,
+    },
+    stepIllustration: {
+      alignSelf: 'center',
+      marginTop: theme.spacing.md,
     },
     privacyCard: {
       flexDirection: 'row',

@@ -16,6 +16,7 @@ import {
   Text,
 } from '../../../design-system/components';
 import type {SegmentedOption} from '../../../design-system/components';
+import {EmptyInsightsIllustration} from '../../../design-system/illustrations';
 import {useTheme} from '../../../design-system/theme';
 import type {InsightsStackParamList} from '../../../app/navigation/types';
 import {formatMoney} from '../../../utils/money';
@@ -118,8 +119,8 @@ function ComparisonCard({data}: {data: InsightsViewModel}) {
         currency,
       )}. ${deltaLine}`}>
       <View style={[styles.cardBody, {gap: theme.spacing.md}]}>
-        <Text variant="label" color="textSecondary">
-          {`${data.cycleLabel.toUpperCase()} VS ${previousCycleLabel.toUpperCase()}`}
+        <Text variant="label" color="textSecondary" style={styles.sectionLabel}>
+          {`${data.cycleLabel} vs ${previousCycleLabel}`}
         </Text>
         <View style={styles.comparisonRow}>
           <View style={styles.comparisonCell}>
@@ -166,7 +167,7 @@ function InsightsBody({data}: {data: InsightsViewModel}) {
         {
           paddingHorizontal: theme.spacing.lg,
           paddingBottom: theme.spacing.xxxl,
-          gap: theme.spacing.lg,
+          gap: theme.spacing.xl,
         },
       ]}>
       <SegmentedControl
@@ -178,14 +179,18 @@ function InsightsBody({data}: {data: InsightsViewModel}) {
 
       <Card>
         <View style={[styles.cardBody, {gap: theme.spacing.sm}]}>
-          <Text variant="label" color="textSecondary">
-            {MODE_TITLES[mode].toUpperCase()}
+          <Text
+            variant="label"
+            color="textSecondary"
+            style={styles.sectionLabel}>
+            {MODE_TITLES[mode]}
           </Text>
           <Text variant="caption" color="textMuted">
             {MODE_SUBTITLES[mode]}
           </Text>
           <TrendChart
             points={points}
+            currency={data.currency}
             accessibilityLabel={accessibilityLabel}
             style={{marginTop: theme.spacing.sm}}
           />
@@ -197,7 +202,7 @@ function InsightsBody({data}: {data: InsightsViewModel}) {
 
       <View style={[styles.tileRow, {gap: theme.spacing.md}]}>
         <MetricCard
-          label="SPENT THIS CYCLE"
+          label="Spent this cycle"
           amountMinor={data.stats.totalExpenseMinor}
           currency={data.currency}
           type="expense"
@@ -205,7 +210,7 @@ function InsightsBody({data}: {data: InsightsViewModel}) {
           style={styles.tile}
         />
         <MetricCard
-          label="AVG PER DAY"
+          label="Avg per day"
           amountMinor={data.stats.averageDailyMinor}
           currency={data.currency}
           caption="This cycle"
@@ -214,14 +219,14 @@ function InsightsBody({data}: {data: InsightsViewModel}) {
       </View>
       <View style={[styles.tileRow, {gap: theme.spacing.md}]}>
         <MetricCard
-          label="HIGHEST DAY"
+          label="Highest day"
           amountMinor={data.stats.highestDay?.totalMinor ?? 0}
           currency={data.currency}
           caption={data.stats.highestDay?.label ?? 'No spending yet'}
           style={styles.tile}
         />
         <StatTile
-          label="TRANSACTIONS"
+          label="Transactions"
           value={String(data.stats.transactionCount)}
           caption="This cycle"
         />
@@ -231,8 +236,8 @@ function InsightsBody({data}: {data: InsightsViewModel}) {
 
       <Card>
         <View style={[styles.cardBody, {gap: theme.spacing.md}]}>
-          <Text variant="label" color="textSecondary">
-            OVERALL BUDGET
+          <Text variant="label" color="textSecondary" style={styles.sectionLabel}>
+            Overall budget
           </Text>
           {data.overallBudgetUsage ? (
             <>
@@ -271,8 +276,8 @@ function InsightsBody({data}: {data: InsightsViewModel}) {
 
       <Card>
         <View style={[styles.cardBody, {gap: theme.spacing.md}]}>
-          <Text variant="label" color="textSecondary">
-            SPENDING BY CATEGORY
+          <Text variant="label" color="textSecondary" style={styles.sectionLabel}>
+            Spending by category
           </Text>
           {shares.length > 0 ? (
             <>
@@ -314,6 +319,7 @@ export function InsightsScreen(_props: Props) {
         />
       ) : !state.data.hasTransactions ? (
         <EmptyState
+          illustration={<EmptyInsightsIllustration />}
           title="No transactions yet"
           message="Add your first transaction to see insights"
         />
@@ -327,6 +333,7 @@ export function InsightsScreen(_props: Props) {
 const styles = StyleSheet.create({
   scrollContent: {paddingTop: 4},
   cardBody: {width: '100%'},
+  sectionLabel: {textTransform: 'uppercase'},
   tileRow: {flexDirection: 'row'},
   tile: {flex: 1},
   comparisonRow: {flexDirection: 'row'},

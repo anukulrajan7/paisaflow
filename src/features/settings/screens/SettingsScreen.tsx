@@ -1,11 +1,13 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {ScrollView, StyleSheet, Switch, View} from 'react-native';
+import type {BottomTabNavigationProp} from '@react-navigation/bottom-tabs';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {
   Bell,
   BellRing,
   FileDown,
   Info,
+  ScanText,
   Sparkles,
   Trash2,
 } from 'lucide-react-native';
@@ -27,7 +29,7 @@ import {
 } from '../../../design-system/components';
 import {useTheme} from '../../../design-system/theme';
 import type {AppTheme} from '../../../design-system/tokens';
-import type {SettingsStackParamList} from '../../../app/navigation/types';
+import type {RootTabParamList, SettingsStackParamList} from '../../../app/navigation/types';
 import {getSettingsRepository} from '../../../database/repositories';
 import type {ReminderSetting} from '../../../database/repositories/interfaces';
 import type {ThemePreference} from '../../../store/themeStore';
@@ -340,6 +342,20 @@ export function SettingsScreen({navigation}: Props) {
             title="AI settings"
             subtitle="Optional — summarize local totals with your own OpenRouter key"
             onPress={() => navigation.navigate('AiSettings')}
+          />
+        </Card>
+
+        <SectionHeader title="Auto-tracking" style={styles.sectionGap} />
+        <Card style={styles.card}>
+          <SettingsRow
+            icon={ScanText}
+            title="SMS expense detection"
+            subtitle="Review transactions detected from bank alerts — parsed on-device"
+            onPress={() =>
+              navigation
+                .getParent<BottomTabNavigationProp<RootTabParamList>>()
+                ?.navigate('TransactionsTab', {screen: 'TrackingSettings'})
+            }
           />
         </Card>
 

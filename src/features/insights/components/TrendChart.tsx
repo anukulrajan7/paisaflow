@@ -5,12 +5,15 @@ import Svg, {Line, Rect} from 'react-native-svg';
 
 import {useTheme} from '../../../design-system/theme';
 import {Text} from '../../../design-system/components';
+import {formatMoney} from '../../../utils/money';
 import type {TrendPoint} from '../services/insightsAggregation';
 
 export interface TrendChartProps {
   points: TrendPoint[];
   /** Screen-reader summary replacing the chart (text alternative sits below it). */
   accessibilityLabel: string;
+  /** Currency for the direct peak value label. */
+  currency?: string;
   height?: number;
   style?: StyleProp<ViewStyle>;
   testID?: string;
@@ -18,6 +21,7 @@ export interface TrendChartProps {
 
 const MAX_AXIS_LABELS = 6;
 const LABEL_WIDTH = 56;
+const PEAK_LABEL_WIDTH = 72;
 
 /**
  * Vertical bar chart of per-bucket expense totals (daily / weekly / monthly).
@@ -27,6 +31,7 @@ const LABEL_WIDTH = 56;
 export function TrendChart({
   points,
   accessibilityLabel,
+  currency = 'INR',
   height = 140,
   style,
   testID,
@@ -38,9 +43,9 @@ export function TrendChart({
     setWidth(event.nativeEvent.layout.width);
   };
 
-  const {bars, labelSlots} = useMemo(() => {
+  const {bars, labelSlots, peak} = useMemo(() => {
     if (width <= 0 || points.length === 0) {
-      return {bars: [], labelSlots: []};
+      return {bars: [], labelSlots: [], peak: null};
     }
     const maxValue = Math.max(...points.map(p => p.expenseMinor), 0);
     const gap = points.length > 20 ? 2 : 6;
@@ -75,7 +80,23 @@ export function TrendChart({
       centerX: index * (barWidth + gap) + barWidth / 2,
     }));
 
-    return {bars: nextBars, labelSlots: nextLabelSlots};
+    // Direct value label above the highest bar — the one number a reader
+    // looks for first. Skipped when the period has no spending.
+    const peakIndex =
+      maxValue > 0
+        ? points.findIndex(p => p.expenseMinor === maxValue)
+        : -1;
+    const nextPeak =
+      peakIndex >= 0
+        ? {
+            key: points[peakIndex].bucketStart,
+            valueMinor: maxValue,
+            topY: nextBars[peakIndex].y,
+            centerX: peakIndex * (barWidth + gap) + barWidth / 2,
+          }
+        : null;
+
+    return {bars: nextBars, labelSlots: nextLabelSlots, peak: nextPeak};
   }, [points, width, height]);
 
   return (
@@ -131,6 +152,26 @@ export function TrendChart({
                 </Text>
               ))}
             </View>
+            {peak ? (
+              <Text
+                variant="caption"
+                color="textSecondary"
+                align="center"
+                numberOfLines={1}
+                style={[
+                  styles.peakLabel,
+                  {
+                    top: Math.max(peak.topY - 20, 0),
+                    left: Math.min(
+                      Math.max(peak.centerX - PEAK_LABEL_WIDTH / 2, 0),
+                      Math.max(width - PEAK_LABEL_WIDTH, 0),
+                    ),
+                    width: PEAK_LABEL_WIDTH,
+                  },
+                ]}>
+                {formatMoney(peak.valueMinor, currency)}
+              </Text>
+            ) : null}
           </>
         ) : null}
       </View>
@@ -142,4 +183,5 @@ const styles = StyleSheet.create({
   root: {width: '100%'},
   labelsRow: {height: 18, marginTop: 4},
   axisLabel: {position: 'absolute', top: 0},
+  peakLabel: {position: 'absolute'},
 });

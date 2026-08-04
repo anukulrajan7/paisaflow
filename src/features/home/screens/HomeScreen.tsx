@@ -154,6 +154,7 @@ export function HomeScreen({navigation}: Props) {
             size="large"
             type={balanceMinor < 0 ? 'expense' : 'neutral'}
             showSign={balanceMinor < 0}
+            style={styles.heroAmount}
           />
           <Text variant="caption" color="textMuted">
             {summary.monthTransactionCount}{' '}
@@ -336,10 +337,14 @@ const createStyles = (theme: AppTheme) =>
     content: {
       paddingHorizontal: theme.spacing.lg,
       paddingBottom: theme.spacing.xxxl,
-      gap: theme.spacing.lg,
+      gap: theme.spacing.xl,
     },
     greeting: {gap: theme.spacing.xs},
-    heroCard: {gap: theme.spacing.sm},
+    heroCard: {gap: theme.spacing.md},
+    heroAmount: {
+      fontSize: theme.typography.display.fontSize,
+      lineHeight: theme.typography.display.lineHeight,
+    },
     upperLabel: {textTransform: 'uppercase'},
     metricRow: {flexDirection: 'row', gap: theme.spacing.md},
     metricFlex: {flex: 1},

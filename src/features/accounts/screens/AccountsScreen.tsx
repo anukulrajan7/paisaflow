@@ -1,7 +1,7 @@
 import React, {useCallback, useMemo, useState} from 'react';
 import {Pressable, ScrollView, StyleSheet, View} from 'react-native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {ChevronDown, ChevronUp, Plus, Wallet} from 'lucide-react-native';
+import {ChevronDown, ChevronUp, Plus} from 'lucide-react-native';
 
 import {
   AppHeader,
@@ -14,6 +14,7 @@ import {
   useToast,
 } from '../../../design-system/components';
 import {useTheme} from '../../../design-system/theme';
+import {EmptyAccountsIllustration} from '../../../design-system/illustrations';
 import type {AppTheme} from '../../../design-system/tokens';
 import type {SettingsStackParamList} from '../../../app/navigation/types';
 import type {Account} from '../../../database/types';
@@ -135,7 +136,7 @@ export function AccountsScreen(_props: Props) {
       <ScrollView contentContainerStyle={styles.list}>
         {active.length === 0 ? (
           <EmptyState
-            icon={Wallet}
+            illustration={<EmptyAccountsIllustration />}
             title="No accounts yet"
             message="Add your first account to start tracking where your money lives."
             actionLabel="Add account"

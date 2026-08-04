@@ -1,0 +1,10 @@
+export type {IllustrationProps} from './types';
+export {WelcomeIllustration} from './WelcomeIllustration';
+export {PreferencesIllustration} from './PreferencesIllustration';
+export {RemindersIllustration} from './RemindersIllustration';
+export {EmptyTransactionsIllustration} from './EmptyTransactionsIllustration';
+export {EmptyInsightsIllustration} from './EmptyInsightsIllustration';
+export {EmptyBudgetsIllustration} from './EmptyBudgetsIllustration';
+export {EmptyAccountsIllustration} from './EmptyAccountsIllustration';
+export {EmptyReviewIllustration} from './EmptyReviewIllustration';
+export {EmptyCategoriesIllustration} from './EmptyCategoriesIllustration';

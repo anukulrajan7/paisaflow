@@ -11,6 +11,7 @@ import type {BottomTabNavigationProp} from '@react-navigation/bottom-tabs';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {
   ArrowLeftRight,
+  Inbox,
   Pencil,
   Search,
   SlidersHorizontal,
@@ -450,11 +451,18 @@ export function TransactionsScreen({navigation}: Props) {
       <AppHeader
         title="Transactions"
         right={
-          <IconButton
-            icon={SlidersHorizontal}
-            onPress={() => setFilterSheetOpen(true)}
-            accessibilityLabel="Open filters"
-          />
+          <View style={styles.headerActions}>
+            <IconButton
+              icon={Inbox}
+              onPress={() => navigation.navigate('ExpenseReview')}
+              accessibilityLabel="Open detected expense review inbox"
+            />
+            <IconButton
+              icon={SlidersHorizontal}
+              onPress={() => setFilterSheetOpen(true)}
+              accessibilityLabel="Open filters"
+            />
+          </View>
         }
       />
       <Input
@@ -616,6 +624,7 @@ export function TransactionsScreen({navigation}: Props) {
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     search: {marginBottom: theme.spacing.sm},
+    headerActions: {flexDirection: 'row', gap: theme.spacing.xs},
     chipsScroll: {flexGrow: 0},
     chipsRow: {
       gap: theme.spacing.sm,

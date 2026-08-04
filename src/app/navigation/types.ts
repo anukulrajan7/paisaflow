@@ -10,6 +10,8 @@ export type HomeStackParamList = {
 export type TransactionsStackParamList = {
   Transactions: undefined;
   TransactionDetails: {transactionId: string};
+  ExpenseReview: undefined;
+  TrackingSettings: undefined;
 };
 
 export type AddStackParamList = {

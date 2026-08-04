@@ -28,7 +28,11 @@ export function StatTile({
       style={styles.card}
       testID={testID}>
       <View style={[styles.inner, {gap: theme.spacing.xs}]}>
-        <Text variant="label" color="textSecondary" numberOfLines={1}>
+        <Text
+          variant="label"
+          color="textSecondary"
+          numberOfLines={1}
+          style={styles.label}>
           {label}
         </Text>
         <Text variant="amountMedium" numberOfLines={1}>
@@ -47,4 +51,5 @@ export function StatTile({
 const styles = StyleSheet.create({
   card: {flex: 1},
   inner: {},
+  label: {textTransform: 'uppercase'},
 });

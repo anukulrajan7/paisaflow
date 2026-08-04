@@ -34,7 +34,8 @@ layer, still bound parameters.
 src/
   app/            # bootstrap, navigation (tabs + native stacks), providers
   database/       # connection, migrations, repositories, queries, seeds, types
-  design-system/  # tokens, ThemeProvider, shared components, icons
+  design-system/  # tokens, ThemeProvider, shared components, icons,
+                  # illustrations (SVG spot art)
   features/<name>/{screens,components,hooks,services,schemas,types,__tests__}
   services/       # cross-feature infra: connectivity, export, notifications,
                   # openrouter, security (keychain)
@@ -64,6 +65,10 @@ src/
   (`#B0512F` light / `#DA8A63` dark); never pure black/white.
 - Components consume tokens via `ThemeProvider` — no hardcoded colors in
   screens, no screen-specific styles inside shared components.
+- Spot illustrations live in `src/design-system/illustrations/` (flat SVG on a
+  soft tonal disc, token colors only). They are decorative by default and
+  accept an optional `accessibilityLabel`; `EmptyState` takes one via its
+  `illustration` prop.
 - The same tokens drive native chrome: launcher icon background
   (`ic_launcher_background`), launch window (`splash_background` =
   `#F7F3ED`).

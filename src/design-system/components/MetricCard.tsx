@@ -46,7 +46,11 @@ export function MetricCard({
       style={[styles.card, style]}
       testID={testID}>
       <View style={styles.header}>
-        <Text variant="label" color="textSecondary" numberOfLines={1}>
+        <Text
+          variant="label"
+          color="textSecondary"
+          numberOfLines={1}
+          style={styles.label}>
           {label}
         </Text>
         {Icon ? <Icon size={16} color={theme.colors.textMuted} /> : null}
@@ -76,4 +80,5 @@ const createStyles = (theme: AppTheme) =>
       justifyContent: 'space-between',
       gap: theme.spacing.sm,
     },
+    label: {textTransform: 'uppercase'},
   });
