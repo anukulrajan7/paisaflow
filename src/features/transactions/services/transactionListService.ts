@@ -30,34 +30,38 @@ export interface TransactionListQuery {
 const COLUMNS =
   'id, type, amount_minor, currency, account_id, destination_account_id, category_id, merchant, note, payment_method, occurred_at, created_at, updated_at, deleted_at';
 
-export async function queryTransactionPage(
-  query: TransactionListQuery,
-): Promise<Transaction[]> {
+type TransactionFilter = Omit<TransactionListQuery, 'limit' | 'offset'>;
+
+/** Shared WHERE clause (bound params) for the list query and its COUNT twin. */
+function buildWhere(filter: TransactionFilter): {
+  clause: string;
+  params: SQLiteValue[];
+} {
   const where: string[] = ['deleted_at IS NULL'];
   const params: SQLiteValue[] = [];
 
-  if (query.type) {
+  if (filter.type) {
     where.push('type = ?');
-    params.push(query.type);
+    params.push(filter.type);
   }
-  if (query.categoryId) {
+  if (filter.categoryId) {
     where.push('category_id = ?');
-    params.push(query.categoryId);
+    params.push(filter.categoryId);
   }
-  if (query.accountId) {
+  if (filter.accountId) {
     where.push('account_id = ?');
-    params.push(query.accountId);
+    params.push(filter.accountId);
   }
-  if (query.from != null) {
+  if (filter.from != null) {
     where.push('occurred_at >= ?');
-    params.push(query.from);
+    params.push(filter.from);
   }
-  if (query.to != null) {
+  if (filter.to != null) {
     where.push('occurred_at < ?');
-    params.push(query.to);
+    params.push(filter.to);
   }
 
-  const term = query.search?.trim();
+  const term = filter.search?.trim();
   if (term) {
     const like = `%${escapeLike(term)}%`;
     where.push(
@@ -66,13 +70,33 @@ export async function queryTransactionPage(
     params.push(like, like, like);
   }
 
+  return {clause: where.join(' AND '), params};
+}
+
+export async function queryTransactionPage(
+  query: TransactionListQuery,
+): Promise<Transaction[]> {
+  const {clause, params} = buildWhere(query);
   const rows = await queryRows<TransactionRow>(
     getDb(),
     `SELECT ${COLUMNS} FROM transactions
-     WHERE ${where.join(' AND ')}
+     WHERE ${clause}
      ORDER BY occurred_at DESC, created_at DESC
      LIMIT ? OFFSET ?`,
     [...params, query.limit, query.offset],
   );
   return rows.map(mapTransactionRow);
+}
+
+/** Total rows matching the filter — powers the filter sheet's apply preview. */
+export async function countTransactions(
+  filter: TransactionFilter,
+): Promise<number> {
+  const {clause, params} = buildWhere(filter);
+  const rows = await queryRows<{count: number}>(
+    getDb(),
+    `SELECT COUNT(*) AS count FROM transactions WHERE ${clause}`,
+    params,
+  );
+  return rows[0]?.count ?? 0;
 }

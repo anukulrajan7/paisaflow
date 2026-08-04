@@ -14,6 +14,9 @@ import {AccountsScreen} from '../../features/accounts/screens/AccountsScreen';
 import {CategoriesScreen} from '../../features/categories/screens/CategoriesScreen';
 import {AiSettingsScreen} from '../../features/settings/screens/AiSettingsScreen';
 import {AboutScreen} from '../../features/settings/screens/AboutScreen';
+import {RecurringRulesScreen} from '../../features/recurring/screens/RecurringRulesScreen';
+import {AppLockSettingsScreen} from '../../features/security/screens/AppLockSettingsScreen';
+import {CloudSyncScreen} from '../../features/cloud/screens/CloudSyncScreen';
 
 import type {
   AddStackParamList,
@@ -95,6 +98,12 @@ export function SettingsStackNavigator() {
       <SettingsStack.Screen name="Categories" component={CategoriesScreen} />
       <SettingsStack.Screen name="AiSettings" component={AiSettingsScreen} />
       <SettingsStack.Screen name="About" component={AboutScreen} />
+      <SettingsStack.Screen
+        name="Recurring"
+        component={RecurringRulesScreen}
+      />
+      <SettingsStack.Screen name="AppLock" component={AppLockSettingsScreen} />
+      <SettingsStack.Screen name="CloudSync" component={CloudSyncScreen} />
     </SettingsStack.Navigator>
   );
 }

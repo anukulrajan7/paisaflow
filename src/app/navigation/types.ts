@@ -28,6 +28,9 @@ export type SettingsStackParamList = {
   Categories: undefined;
   AiSettings: undefined;
   About: undefined;
+  Recurring: undefined;
+  AppLock: undefined;
+  CloudSync: undefined;
 };
 
 export type RootTabParamList = {

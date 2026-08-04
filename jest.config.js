@@ -12,6 +12,6 @@ module.exports = {
   // live next to the tests that use them.
   testMatch: ['**/__tests__/**/*.test.[jt]s?(x)'],
   transformIgnorePatterns: [
-    'node_modules/(?!(jest-)?react-native|@react-native|@react-native-community|@react-navigation|@notifee/react-native|react-native-gesture-handler|react-native-screens|react-native-safe-area-context|react-native-svg|lucide-react-native|react-native-nitro-sqlite|react-native-keychain|react-native-fs|react-native-share|react-native-get-random-values|uuid|zustand)/',
+    'node_modules/(?!(jest-)?react-native|@react-native|@react-native-community|@react-native-async-storage|@react-navigation|@notifee/react-native|react-native-gesture-handler|react-native-screens|react-native-safe-area-context|react-native-svg|lucide-react-native|react-native-nitro-sqlite|react-native-keychain|react-native-fs|react-native-share|react-native-get-random-values|uuid|zustand)/',
   ],
 };

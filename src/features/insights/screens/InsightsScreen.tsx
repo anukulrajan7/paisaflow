@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useMemo, useState} from 'react';
 import {ScrollView, StyleSheet, View} from 'react-native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {Minus, TrendingDown, TrendingUp} from 'lucide-react-native';
@@ -10,7 +10,6 @@ import {
   Card,
   EmptyState,
   ErrorState,
-  LoadingState,
   MetricCard,
   SegmentedControl,
   Text,
@@ -18,6 +17,7 @@ import {
 import type {SegmentedOption} from '../../../design-system/components';
 import {EmptyInsightsIllustration} from '../../../design-system/illustrations';
 import {useTheme} from '../../../design-system/theme';
+import type {AppTheme} from '../../../design-system/tokens';
 import type {InsightsStackParamList} from '../../../app/navigation/types';
 import {formatMoney} from '../../../utils/money';
 import {useInsights} from '../hooks/useInsights';
@@ -27,6 +27,7 @@ import {summarizeTrend} from '../services/insightsAggregation';
 import {TrendChart} from '../components/TrendChart';
 import {CategoryBars} from '../components/CategoryBars';
 import {StatTile} from '../components/StatTile';
+import {InsightsSkeleton} from '../components/InsightsSkeleton';
 
 type Props = NativeStackScreenProps<InsightsStackParamList, 'Insights'>;
 
@@ -83,6 +84,7 @@ function trendCaption(
 
 function ComparisonCard({data}: {data: InsightsViewModel}) {
   const {theme} = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const {comparison, currency, previousCycleLabel} = data;
 
   let deltaLine: string;
@@ -153,6 +155,7 @@ function ComparisonCard({data}: {data: InsightsViewModel}) {
 
 function InsightsBody({data}: {data: InsightsViewModel}) {
   const {theme} = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [mode, setMode] = useState<TrendMode>('daily');
 
   const points = trendForMode(data, mode);
@@ -311,7 +314,7 @@ export function InsightsScreen(_props: Props) {
         subtitle={state.status === 'ready' ? state.data.cycleLabel : undefined}
       />
       {state.status === 'loading' ? (
-        <LoadingState message="Loading insights" />
+        <InsightsSkeleton />
       ) : state.status === 'error' ? (
         <ErrorState
           message="Could not load your insights."
@@ -330,14 +333,19 @@ export function InsightsScreen(_props: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  scrollContent: {paddingTop: 4},
-  cardBody: {width: '100%'},
-  sectionLabel: {textTransform: 'uppercase'},
-  tileRow: {flexDirection: 'row'},
-  tile: {flex: 1},
-  comparisonRow: {flexDirection: 'row'},
-  comparisonCell: {flex: 1, gap: 2},
-  deltaRow: {flexDirection: 'row', alignItems: 'center', gap: 8},
-  deltaText: {flex: 1},
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    scrollContent: {paddingTop: theme.spacing.xs},
+    cardBody: {width: '100%'},
+    sectionLabel: {textTransform: 'uppercase'},
+    tileRow: {flexDirection: 'row'},
+    tile: {flex: 1},
+    comparisonRow: {flexDirection: 'row'},
+    comparisonCell: {flex: 1, gap: theme.spacing.xs},
+    deltaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+    },
+    deltaText: {flex: 1},
+  });

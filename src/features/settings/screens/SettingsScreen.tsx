@@ -5,8 +5,11 @@ import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {
   Bell,
   BellRing,
+  Cloud,
   FileDown,
   Info,
+  Lock,
+  Repeat,
   ScanText,
   Sparkles,
   Trash2,
@@ -356,6 +359,32 @@ export function SettingsScreen({navigation}: Props) {
                 .getParent<BottomTabNavigationProp<RootTabParamList>>()
                 ?.navigate('TransactionsTab', {screen: 'TrackingSettings'})
             }
+          />
+        </Card>
+
+        <SectionHeader title="Automation" style={styles.sectionGap} />
+        <Card style={styles.card}>
+          <SettingsRow
+            icon={Repeat}
+            title="Recurring payments"
+            subtitle="Rent, subscriptions and credit-card bills — get reminded, confirm in one tap"
+            onPress={() => navigation.navigate('Recurring')}
+          />
+        </Card>
+
+        <SectionHeader title="Security" style={styles.sectionGap} />
+        <Card style={styles.card}>
+          <SettingsRow
+            icon={Lock}
+            title="App lock"
+            subtitle="Require a PIN to open PaisaFlow"
+            onPress={() => navigation.navigate('AppLock')}
+          />
+          <SettingsRow
+            icon={Cloud}
+            title="Cloud sync (optional)"
+            subtitle="Back up and sync with your own Supabase project"
+            onPress={() => navigation.navigate('CloudSync')}
           />
         </Card>
 

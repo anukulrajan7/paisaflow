@@ -67,18 +67,34 @@ export function TrendChart({
     });
 
     // Evenly spaced axis labels, always including the first and last bucket.
+    // Edge labels are pinned inside the chart bounds and edge-aligned so they
+    // never clip; interior labels stay centered on their bar.
     const slotCount = Math.min(MAX_AXIS_LABELS, points.length);
     const step = slotCount > 1 ? (points.length - 1) / (slotCount - 1) : 0;
     const indices = new Set<number>();
     for (let slot = 0; slot < slotCount; slot += 1) {
       indices.add(Math.round(slot * step));
     }
-    const nextLabelSlots = [...indices].map(index => ({
-      key: points[index].bucketStart,
-      label: points[index].label,
-      isCurrent: points[index].isCurrent,
-      centerX: index * (barWidth + gap) + barWidth / 2,
-    }));
+    const maxLabelLeft = Math.max(width - LABEL_WIDTH, 0);
+    const nextLabelSlots = [...indices].map(index => {
+      const centerX = index * (barWidth + gap) + barWidth / 2;
+      const isFirst = index === 0;
+      const isLast = index === points.length - 1;
+      return {
+        key: points[index].bucketStart,
+        label: points[index].label,
+        isCurrent: points[index].isCurrent,
+        left: isFirst
+          ? 0
+          : isLast
+            ? maxLabelLeft
+            : Math.min(Math.max(centerX - LABEL_WIDTH / 2, 0), maxLabelLeft),
+        align: (isFirst ? 'left' : isLast ? 'right' : 'center') as
+          | 'left'
+          | 'right'
+          | 'center',
+      };
+    });
 
     // Direct value label above the highest bar — the one number a reader
     // looks for first. Skipped when the period has no spending.
@@ -133,19 +149,23 @@ export function TrendChart({
                 strokeWidth={1}
               />
             </Svg>
-            <View style={styles.labelsRow}>
+            <View
+              style={{
+                height: theme.typography.caption.lineHeight,
+                marginTop: theme.spacing.xs,
+              }}>
               {labelSlots.map(slot => (
                 <Text
                   key={slot.key}
                   variant="caption"
                   color={slot.isCurrent ? 'primary' : 'textMuted'}
-                  align="center"
+                  align={slot.align}
                   numberOfLines={1}
                   style={[
                     styles.axisLabel,
                     {
                       width: LABEL_WIDTH,
-                      left: slot.centerX - LABEL_WIDTH / 2,
+                      left: slot.left,
                     },
                   ]}>
                   {slot.label}
@@ -181,7 +201,6 @@ export function TrendChart({
 
 const styles = StyleSheet.create({
   root: {width: '100%'},
-  labelsRow: {height: 18, marginTop: 4},
   axisLabel: {position: 'absolute', top: 0},
   peakLabel: {position: 'absolute'},
 });

@@ -12,6 +12,8 @@ export interface ChipProps {
   selected?: boolean;
   onPress?: (event: GestureResponderEvent) => void;
   icon?: LucideIcon;
+  /** Override the leading icon tint (e.g. a category color). */
+  iconColor?: string;
   disabled?: boolean;
   accessibilityLabel?: string;
   style?: StyleProp<ViewStyle>;
@@ -24,6 +26,7 @@ export function Chip({
   selected = false,
   onPress,
   icon: Icon,
+  iconColor,
   disabled = false,
   accessibilityLabel,
   style,
@@ -54,7 +57,10 @@ export function Chip({
       {Icon ? (
         <Icon
           size={14}
-          color={selected ? theme.colors.primary : theme.colors.textSecondary}
+          color={
+            iconColor ??
+            (selected ? theme.colors.primary : theme.colors.textSecondary)
+          }
         />
       ) : null}
       <Text

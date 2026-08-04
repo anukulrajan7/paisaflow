@@ -168,7 +168,7 @@ export function OnboardingScreen(_props: Props) {
         {step === 0 ? (
           <View style={styles.stepBody}>
             <View style={styles.heroIllustration}>
-              <WelcomeIllustration size={180} />
+              <WelcomeIllustration size={160} />
             </View>
             <Text variant="heading" align="center">
               Welcome to PaisaFlow
@@ -192,7 +192,7 @@ export function OnboardingScreen(_props: Props) {
         {step === 1 ? (
           <View style={styles.stepBody}>
             <View style={styles.stepIllustration}>
-              <PreferencesIllustration size={132} />
+              <PreferencesIllustration size={160} />
             </View>
             <Text variant="title">Set your preferences</Text>
             <Text variant="body" color="textSecondary">
@@ -229,7 +229,7 @@ export function OnboardingScreen(_props: Props) {
         {step === 2 ? (
           <View style={styles.stepBody}>
             <View style={styles.stepIllustration}>
-              <RemindersIllustration size={132} />
+              <RemindersIllustration size={160} />
             </View>
             <Text variant="title">Gentle reminders</Text>
             <Text variant="body" color="textSecondary">

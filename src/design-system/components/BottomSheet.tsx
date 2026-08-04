@@ -22,6 +22,8 @@ export interface BottomSheetProps {
   children?: React.ReactNode;
   /** Cap the sheet height at this fraction of the screen (0-1). */
   maxHeightFraction?: number;
+  /** Sticky actions row pinned below the scrollable content. */
+  footer?: React.ReactNode;
   contentStyle?: StyleProp<ViewStyle>;
   testID?: string;
 }
@@ -33,6 +35,7 @@ export function BottomSheet({
   title,
   children,
   maxHeightFraction = 0.75,
+  footer,
   contentStyle,
   testID,
 }: BottomSheetProps) {
@@ -79,7 +82,10 @@ export function BottomSheet({
               />
             </View>
           ) : null}
-          <ScrollView bounces={false}>{children}</ScrollView>
+          <ScrollView bounces={false} keyboardShouldPersistTaps="handled">
+            {children}
+          </ScrollView>
+          {footer ? <View style={styles.footer}>{footer}</View> : null}
         </View>
       </View>
     </RNModal>
@@ -116,4 +122,9 @@ const createStyles = (theme: AppTheme) =>
       marginBottom: theme.spacing.sm,
     },
     headerTitle: {flex: 1},
+    footer: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: theme.colors.border,
+      paddingTop: theme.spacing.md,
+    },
   });

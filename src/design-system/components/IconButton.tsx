@@ -66,6 +66,7 @@ export function IconButton({
         variant === 'default' && {backgroundColor: 'transparent'},
         isDisabled && styles.disabled,
         pressed && !isDisabled && styles.pressed,
+        pressed && !isDisabled && variant === 'default' && styles.pressedTint,
         style,
       ]}>
       {loading ? (
@@ -84,5 +85,6 @@ const createStyles = (theme: AppTheme) =>
       justifyContent: 'center',
     },
     disabled: {opacity: 0.4},
-    pressed: {opacity: 0.7, backgroundColor: theme.colors.primarySoft},
+    pressed: {opacity: 0.7},
+    pressedTint: {backgroundColor: theme.colors.primarySoft},
   });

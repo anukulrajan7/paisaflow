@@ -29,6 +29,7 @@ import type {Category, Transaction} from '../../../database/types';
 import {dayjs, formatPeriodLabel} from '../../../utils/date';
 import {formatMoney} from '../../../utils/money';
 import {AiInsightCard} from '../../ai-summary';
+import {RecurringDueCard} from '../../recurring';
 import {CategorySpendRow} from '../components/CategorySpendRow';
 import {DashboardSkeleton} from '../components/DashboardSkeleton';
 import {MonthSelector} from '../components/MonthSelector';
@@ -195,6 +196,8 @@ export function HomeScreen({navigation}: Props) {
             />
           </View>
         </Card>
+
+        <RecurringDueCard />
 
         {budgetUsage ? (
           <Card

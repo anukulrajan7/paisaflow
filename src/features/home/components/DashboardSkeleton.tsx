@@ -16,13 +16,13 @@ export function DashboardSkeleton() {
       accessibilityRole="progressbar"
       accessibilityLabel="Loading dashboard"
       style={styles.root}>
-      <Skeleton height={120} radius={radius} />
+      <Skeleton height={132} radius={radius} />
       <View style={styles.row}>
         <Skeleton height={96} radius={radius} style={styles.flex} />
         <Skeleton height={96} radius={radius} style={styles.flex} />
       </View>
-      <Skeleton height={64} radius={radius} />
-      <Skeleton height={200} radius={radius} />
+      <Skeleton height={56} radius={radius} />
+      <Skeleton height={260} radius={radius} />
       <Skeleton height={240} radius={radius} />
     </View>
   );
@@ -30,7 +30,7 @@ export function DashboardSkeleton() {
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    root: {gap: theme.spacing.lg},
+    root: {gap: theme.spacing.xl},
     row: {flexDirection: 'row', gap: theme.spacing.md},
     flex: {flex: 1},
   });

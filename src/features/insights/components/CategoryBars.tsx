@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useMemo, useState} from 'react';
 import {StyleSheet, View} from 'react-native';
 import type {LayoutChangeEvent} from 'react-native';
 import Svg, {Rect} from 'react-native-svg';
@@ -9,6 +9,7 @@ import {
   Text,
 } from '../../../design-system/components';
 import {useTheme} from '../../../design-system/theme';
+import type {AppTheme} from '../../../design-system/tokens';
 import {getCategoryIcon} from '../../../design-system/icons';
 import {formatMoney} from '../../../utils/money';
 import type {CategoryShare} from '../services/insightsAggregation';
@@ -30,6 +31,7 @@ const BAR_RADIUS = 4;
  */
 export function CategoryBars({shares, currency = 'INR', testID}: CategoryBarsProps) {
   const {theme} = useTheme();
+  const styles = useMemo(() => createStyles(theme), [theme]);
   const [width, setWidth] = useState(0);
 
   const onLayout = (event: LayoutChangeEvent) => {
@@ -115,10 +117,15 @@ export function CategoryBars({shares, currency = 'INR', testID}: CategoryBarsPro
   );
 }
 
-const styles = StyleSheet.create({
-  root: {width: '100%'},
-  row: {width: '100%', gap: 8},
-  headerRow: {flexDirection: 'row', alignItems: 'center', gap: 12},
-  nameWrap: {flex: 1, gap: 2},
-  amountWrap: {alignItems: 'flex-end', gap: 2},
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    root: {width: '100%'},
+    row: {width: '100%', gap: theme.spacing.sm},
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.md,
+    },
+    nameWrap: {flex: 1, gap: theme.spacing.xs},
+    amountWrap: {alignItems: 'flex-end', gap: theme.spacing.xs},
+  });
