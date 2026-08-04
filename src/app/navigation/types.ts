@@ -31,6 +31,14 @@ export type SettingsStackParamList = {
   Recurring: undefined;
   AppLock: undefined;
   CloudSync: undefined;
+  People: undefined;
+  PersonLedger: {personId: string};
+  Salary: undefined;
+  Investments: undefined;
+  InvestmentDetails: {investmentId: string};
+  SavingsGoals: undefined;
+  SavingsGoalDetails: {goalId: string};
+  MoneyReminders: undefined;
 };
 
 export type RootTabParamList = {

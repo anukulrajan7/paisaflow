@@ -30,6 +30,15 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
+        <!-- Supabase email confirmation redirects here (emailRedirectTo);
+             the link confirms the account server-side, then opens the app
+             so the user can sign in. -->
+        <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="paisaflow" android:host="auth" />
+        </intent-filter>
       </activity>
     </application>
 </manifest>

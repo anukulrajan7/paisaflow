@@ -1,5 +1,15 @@
-export {parseBankMessage, guessCategoryId, computeDedupeHash} from './smsParser';
-export type {ParsedDirection, ParsedTransactionMessage} from './smsParser';
+export {
+  parseBankMessage,
+  guessCategoryId,
+  computeDedupeHash,
+  extractInstrument,
+} from './smsParser';
+export type {
+  ParsedDirection,
+  ParsedInstrument,
+  ParseConfidence,
+  ParsedTransactionMessage,
+} from './smsParser';
 export {
   getSmsInbox,
   hasSmsPermission,

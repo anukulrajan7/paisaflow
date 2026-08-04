@@ -2,6 +2,7 @@ import {SYSTEM_CATEGORY_IDS} from '../../../database/seeds/defaultData';
 import {dayjs} from '../../../utils/date';
 import {
   computeDedupeHash,
+  extractInstrument,
   guessCategoryId,
   parseBankMessage,
 } from '../smsParser';
@@ -159,6 +160,178 @@ describe('parseBankMessage — transaction alerts', () => {
     expect(parsed?.amountMinor).toBe(45_000);
     expect(parsed?.merchant).toBe('Metro Card Recharge');
     expect(parsed?.categoryId).toBe(SYSTEM_CATEGORY_IDS.transport);
+  });
+});
+
+describe('parseBankMessage — amount disambiguation (BUG 1 regression)', () => {
+  it('takes the debit amount, not the trailing available balance', () => {
+    const parsed = parseBankMessage(
+      'Rs.1,234.00 debited from A/c XX4521 on 12-01-26 at SWIGGY BANGALORE. Avl Bal Rs.18,432.10',
+    );
+    expect(parsed?.direction).toBe('debit');
+    expect(parsed?.amountMinor).toBe(123_400);
+    expect(parsed?.confidence).toBe('high');
+    expect(parsed?.accountHint).toBe('4521');
+  });
+
+  it('takes the debit amount when the balance is stated BEFORE the debit', () => {
+    const parsed = parseBankMessage(
+      'Avl Bal Rs.18,432.10. Rs.1,234.00 debited from A/c XX4521 on 12-01-26.',
+    );
+    expect(parsed?.direction).toBe('debit');
+    expect(parsed?.amountMinor).toBe(123_400);
+    expect(parsed?.occurredAt).toBe(dayjs('2026-01-12').valueOf());
+  });
+
+  it('ignores "Available Balance" and "Bal:" phrasings too', () => {
+    const parsed = parseBankMessage(
+      'Paid Rs 250 at Metro Station on 11-02-26. Available Balance: Rs.9,999.00',
+    );
+    expect(parsed?.amountMinor).toBe(25_000);
+    const balColon = parseBankMessage(
+      'Rs.300.00 debited from A/c XX7777 at CHAI POINT. Bal: Rs.8,888.00',
+    );
+    expect(balColon?.amountMinor).toBe(30_000);
+  });
+
+  it('returns null for balance-only messages (no movement)', () => {
+    expect(
+      parseBankMessage(
+        'Your A/c XX4521 available balance is Rs.18,432.10 as on 12-01-26.',
+      ),
+    ).toBeNull();
+    expect(
+      parseBankMessage('Avl Bal in A/c XX4521 is Rs.18,432.10'),
+    ).toBeNull();
+  });
+
+  it('returns null when the ONLY amount is a balance, instead of guessing it', () => {
+    expect(
+      parseBankMessage(
+        'Dear Customer, your A/c XX4521 was debited today. Avl Bal Rs.18,432.10',
+      ),
+    ).toBeNull();
+  });
+
+  it('prefers the amount closest to the verb and flags low confidence', () => {
+    const parsed = parseBankMessage(
+      'INR 1,000.00 debited from A/c XX1234. Convenience fee Rs.10.00 applied.',
+    );
+    expect(parsed?.direction).toBe('debit');
+    expect(parsed?.amountMinor).toBe(100_000);
+    expect(parsed?.confidence).toBe('low');
+  });
+
+  it('parses an amount with no decimals', () => {
+    const parsed = parseBankMessage(
+      'Rs 500 debited from A/c XX9999 at Chai Point on 10-02-26',
+    );
+    expect(parsed?.direction).toBe('debit');
+    expect(parsed?.amountMinor).toBe(50_000);
+    expect(parsed?.merchant).toBe('Chai Point');
+    expect(parsed?.confidence).toBe('high');
+  });
+});
+
+describe('parseBankMessage — instrument detection (BUG 2/3)', () => {
+  it('parses a credit card spend as an expense with instrument credit_card', () => {
+    const parsed = parseBankMessage(
+      'Rs 899.00 spent on your HDFC Bank Credit Card xx1234 at AMAZON on 12-01-26',
+    );
+    expect(parsed?.direction).toBe('debit');
+    expect(parsed?.amountMinor).toBe(89_900);
+    expect(parsed?.instrument).toBe('credit_card');
+    expect(parsed?.merchant).toBe('AMAZON');
+    expect(parsed?.accountHint).toBe('1234');
+    expect(parsed?.categoryId).toBe(SYSTEM_CATEGORY_IDS.shopping);
+  });
+
+  it('parses a debit card POS spend, ignoring the trailing balance', () => {
+    const parsed = parseBankMessage(
+      'INR 2,499.00 debited on SBI Debit Card XX5678 at DMART MUMBAI on 03-02-26. Avl Bal Rs.9,500.75',
+    );
+    expect(parsed?.direction).toBe('debit');
+    expect(parsed?.amountMinor).toBe(249_900);
+    expect(parsed?.instrument).toBe('debit_card');
+    expect(parsed?.merchant).toBe('DMART MUMBAI');
+    expect(parsed?.accountHint).toBe('5678');
+    expect(parsed?.categoryId).toBe(SYSTEM_CATEGORY_IDS.groceries);
+  });
+
+  it('parses a UPI payment to a VPA handle', () => {
+    const parsed = parseBankMessage(
+      'Rs.750.00 debited from A/c XX9012 to VPA ramesh.k@okhdfc on 05-02-26. UPI Ref No 401234567890.',
+    );
+    expect(parsed?.direction).toBe('debit');
+    expect(parsed?.amountMinor).toBe(75_000);
+    expect(parsed?.instrument).toBe('upi');
+    expect(parsed?.merchant).toBe('ramesh.k');
+    expect(parsed?.referenceId).toBe('401234567890');
+  });
+
+  it('parses a UPI collect credit from a VPA handle', () => {
+    const parsed = parseBankMessage(
+      'Rs.1,200.00 credited to your A/c XX3456 from VPA priya@ybl via UPI on 06-02-26.',
+    );
+    expect(parsed?.direction).toBe('credit');
+    expect(parsed?.amountMinor).toBe(120_000);
+    expect(parsed?.instrument).toBe('upi');
+    expect(parsed?.accountHint).toBe('3456');
+  });
+
+  it('parses an ATM cash withdrawal', () => {
+    const parsed = parseBankMessage(
+      'Rs.5,000 withdrawn from your A/c XX1111 at SBI ATM on 07-02-26. Avl Bal Rs.20,000.00',
+    );
+    expect(parsed?.direction).toBe('debit');
+    expect(parsed?.amountMinor).toBe(500_000);
+    expect(parsed?.instrument).toBe('atm');
+    expect(parsed?.accountHint).toBe('1111');
+  });
+
+  it('parses a net banking IMPS debit', () => {
+    const parsed = parseBankMessage(
+      'INR 12,000.00 debited from A/c XX3333 via NetBanking on 08-02-26. IMPS Ref No 512345678901 to ACME TRADERS. Avl Bal: Rs.30,000.00',
+    );
+    expect(parsed?.direction).toBe('debit');
+    expect(parsed?.amountMinor).toBe(1_200_000);
+    expect(parsed?.instrument).toBe('net_banking');
+    expect(parsed?.referenceId).toBe('512345678901');
+    expect(parsed?.accountHint).toBe('3333');
+  });
+
+  it('parses a NEFT credit as net banking', () => {
+    const parsed = parseBankMessage(
+      'Your A/c XX4444 has been credited with Rs.25,000.00 through NEFT from ACME CORP on 09-02-26.',
+    );
+    expect(parsed?.direction).toBe('credit');
+    expect(parsed?.amountMinor).toBe(2_500_000);
+    expect(parsed?.instrument).toBe('net_banking');
+    expect(parsed?.merchant).toBe('ACME CORP');
+    expect(parsed?.accountHint).toBe('4444');
+  });
+});
+
+describe('extractInstrument', () => {
+  it.each([
+    ['Rs.100 debited via UPIRef 123456789012', 'upi'],
+    ['Paid Rs.200 to user@ybl', 'upi'],
+    ['Rs.300 sent using UPI', 'upi'],
+    ['Rs.400 spent on Debit Card XX1111', 'debit_card'],
+    ['Rs.500 spent on Credit Card XX2222', 'credit_card'],
+    ['Cash withdrawal of Rs.600 at ATM', 'atm'],
+    ['Rs.700 debited through NetBanking', 'net_banking'],
+    ['Rs.800 debited from Axis Bank Card XX7788', 'unknown'],
+  ] as const)('"%s" -> %s', (body, expected) => {
+    expect(extractInstrument(body)).toBe(expected);
+  });
+
+  it('does not treat an email address as a UPI handle', () => {
+    expect(
+      extractInstrument(
+        'Rs.100 debited from A/c XX1234. Write to support@hdfcbank.com for help.',
+      ),
+    ).toBe('unknown');
   });
 });
 

@@ -8,13 +8,14 @@ import type {TimestampTrigger} from '@notifee/react-native';
 
 import {getSettingsRepository} from '../../database/repositories';
 import type {ReminderSetting} from '../../database/repositories';
+import {useDataVersionStore} from '../../store/dataVersionStore';
 import {
-  EVENING_REMINDER_COPY,
   EVENING_REMINDER_ID,
-  MORNING_REMINDER_COPY,
   MORNING_REMINDER_ID,
   REMINDER_CHANNEL_ID,
 } from './constants';
+import {composeReminderBody, fallbackReminderContent} from './compose';
+import type {ReminderContent, ReminderKind} from './compose';
 import {nextOccurrenceTimestamp} from './time';
 
 async function ensureReminderChannel(): Promise<void> {
@@ -28,7 +29,7 @@ async function ensureReminderChannel(): Promise<void> {
 async function scheduleReminder(
   id: string,
   setting: ReminderSetting,
-  copy: {title: string; body: string},
+  content: ReminderContent,
 ): Promise<void> {
   if (!setting.enabled) {
     return;
@@ -41,8 +42,10 @@ async function scheduleReminder(
   await notifee.createTriggerNotification(
     {
       id,
-      title: copy.title,
-      body: copy.body,
+      title: content.title,
+      body: content.body,
+      // Deep-link target for taps — see app/navigation/notificationNavigation.
+      data: {screen: content.screen},
       android: {
         channelId: REMINDER_CHANNEL_ID,
         // Required on Android for press events to be delivered.
@@ -53,6 +56,15 @@ async function scheduleReminder(
   );
 }
 
+/** Compose copy from local data; any failure falls back to the static copy. */
+async function composeSafely(kind: ReminderKind): Promise<ReminderContent> {
+  try {
+    return await composeReminderBody(kind);
+  } catch {
+    return fallbackReminderContent(kind);
+  }
+}
+
 /**
  * Reschedule morning/evening reminder notifications from persisted settings.
  *
@@ -61,6 +73,10 @@ async function scheduleReminder(
  * future occurrence). Disabled reminders are simply left cancelled. If
  * notification permission is not granted, both reminders stay cancelled and
  * nothing is scheduled.
+ *
+ * The copy is composed from current local data (due payments, salary,
+ * investments, savings, spending) at sync time; when nothing applies — or
+ * composition fails — the static fallback copy is used instead.
  */
 export async function syncRemindersFromSettings(): Promise<void> {
   await ensureReminderChannel();
@@ -80,8 +96,13 @@ export async function syncRemindersFromSettings(): Promise<void> {
     return;
   }
 
-  await scheduleReminder(MORNING_REMINDER_ID, morning, MORNING_REMINDER_COPY);
-  await scheduleReminder(EVENING_REMINDER_ID, evening, EVENING_REMINDER_COPY);
+  const [morningContent, eveningContent] = await Promise.all([
+    composeSafely('morning'),
+    composeSafely('evening'),
+  ]);
+
+  await scheduleReminder(MORNING_REMINDER_ID, morning, morningContent);
+  await scheduleReminder(EVENING_REMINDER_ID, evening, eveningContent);
 }
 
 /**
@@ -94,5 +115,45 @@ export async function requestNotificationPermission(): Promise<boolean> {
     return settings.authorizationStatus >= AuthorizationStatus.AUTHORIZED;
   } catch {
     return false;
+  }
+}
+
+const RESYNC_DEBOUNCE_MS = 2000;
+
+let dataSyncUnsubscribe: (() => void) | null = null;
+let resyncTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * Re-run syncRemindersFromSettings() (debounced, 2s) whenever financial data
+ * changes, so scheduled reminder copy tracks recent edits. Idempotent — safe
+ * to call from every bootstrap. Never throws; reminder resync is best-effort
+ * and must never surface errors to the caller.
+ */
+export function subscribeReminderSyncToDataChanges(): void {
+  if (dataSyncUnsubscribe) {
+    return;
+  }
+  dataSyncUnsubscribe = useDataVersionStore.subscribe(() => {
+    if (resyncTimer) {
+      clearTimeout(resyncTimer);
+    }
+    resyncTimer = setTimeout(() => {
+      resyncTimer = null;
+      syncRemindersFromSettings().catch(() => {
+        // Best-effort — a failed resync leaves the previous schedule intact.
+      });
+    }, RESYNC_DEBOUNCE_MS);
+  });
+}
+
+/** Stop the data-version resync subscription (dev/test hook). */
+export function unsubscribeReminderSyncFromDataChanges(): void {
+  if (resyncTimer) {
+    clearTimeout(resyncTimer);
+    resyncTimer = null;
+  }
+  if (dataSyncUnsubscribe) {
+    dataSyncUnsubscribe();
+    dataSyncUnsubscribe = null;
   }
 }

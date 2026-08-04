@@ -53,10 +53,30 @@ An in-app override wins over the bundled values.
 - Settings → Cloud sync → **Create account** (email + password), or
   **Sign in** if you already created one.
   - If your project has email confirmation enabled (the default), confirm
-    the account from the email Supabase sends, then sign in. You can disable
-    this under **Authentication → Sign In / Providers → Email → Confirm
-    email** if you prefer password-only sign-up.
+    the account from the email Supabase sends, then sign in.
 - Tap **Sync now**. Done — the screen shows the last sync time.
+
+### 6. Fix the confirmation email (recommended for MVP)
+
+Out of the box Supabase sends a confirm email whose link points at
+**localhost** (the dashboard's default Site URL) — opening it on a phone
+goes nowhere. Pick one of these fixes in your project dashboard:
+
+- **Simplest — disable email confirmation (fine for an MVP/personal app):**
+  1. Go to **Authentication → Sign In / Up** (older dashboards:
+     **Authentication → Providers**).
+  2. Open the **Email** provider section.
+  3. Toggle **Confirm email** OFF and save.
+
+  New accounts are then signed in immediately after **Create account**;
+  no email step at all.
+
+- **Or keep confirmation and make the link work:**
+  1. Go to **Authentication → URL Configuration**.
+  2. Set **Site URL** to `paisaflow://auth` (the app registers this deep
+     link; clicking the email link confirms the account and opens the app).
+  3. Under **Redirect URLs** on the same page, add `paisaflow://auth` —
+     Supabase rejects `emailRedirectTo` values that are not listed here.
 
 ## How sync works (and its limits)
 

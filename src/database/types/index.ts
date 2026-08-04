@@ -10,7 +10,13 @@
 
 export type TransactionType = 'expense' | 'income' | 'transfer';
 
-export type AccountType = 'cash' | 'bank' | 'credit_card' | 'upi_wallet';
+export type AccountType =
+  | 'cash'
+  | 'bank'
+  | 'credit_card'
+  | 'upi_wallet'
+  | 'investment'
+  | 'person';
 
 export type CategoryType = 'expense' | 'income';
 

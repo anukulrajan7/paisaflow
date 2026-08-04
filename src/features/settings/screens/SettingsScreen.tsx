@@ -3,16 +3,22 @@ import {ScrollView, StyleSheet, Switch, View} from 'react-native';
 import type {BottomTabNavigationProp} from '@react-navigation/bottom-tabs';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {
+  BadgeIndianRupee,
   Bell,
   BellRing,
   Cloud,
+  Database,
+  Eraser,
   FileDown,
+  HandCoins,
   Info,
   Lock,
+  PiggyBank,
   Repeat,
   ScanText,
   Sparkles,
   Trash2,
+  TrendingUp,
 } from 'lucide-react-native';
 
 import {
@@ -35,6 +41,12 @@ import type {AppTheme} from '../../../design-system/tokens';
 import type {RootTabParamList, SettingsStackParamList} from '../../../app/navigation/types';
 import {getSettingsRepository} from '../../../database/repositories';
 import type {ReminderSetting} from '../../../database/repositories/interfaces';
+import {getDb} from '../../../database/connection';
+import {
+  isDemoDataLoaded,
+  removeDemoData,
+  seedDemoData,
+} from '../../../database/seeds';
 import type {ThemePreference} from '../../../store/themeStore';
 import {useThemeStore} from '../../../store/themeStore';
 import {useOnboardingStore} from '../../../store/onboardingStore';
@@ -94,17 +106,23 @@ export function SettingsScreen({navigation}: Props) {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleting, setDeleting] = useState(false);
 
+  const [demoLoaded, setDemoLoaded] = useState(false);
+  const [demoLoadSheetOpen, setDemoLoadSheetOpen] = useState(false);
+  const [demoRemoveSheetOpen, setDemoRemoveSheetOpen] = useState(false);
+  const [demoBusy, setDemoBusy] = useState(false);
+
   useEffect(() => {
     let mounted = true;
     (async () => {
       const settings = getSettingsRepository();
-      const [storedCurrency, storedTheme, storedDay, storedMorning, storedEvening] =
+      const [storedCurrency, storedTheme, storedDay, storedMorning, storedEvening, hasDemoData] =
         await Promise.all([
           settings.getCurrency(),
           settings.getThemePreference(),
           settings.getBudgetCycleStartDay(),
           settings.getMorningReminder(),
           settings.getEveningReminder(),
+          isDemoDataLoaded(getDb()),
         ]);
       if (!mounted) {
         return;
@@ -113,6 +131,7 @@ export function SettingsScreen({navigation}: Props) {
       setCycleStartDay(storedDay);
       setMorning(storedMorning);
       setEvening(storedEvening);
+      setDemoLoaded(hasDemoData);
       // Keep the in-memory theme in sync with the persisted preference.
       if (storedTheme !== useThemeStore.getState().preference) {
         useThemeStore.getState().setTheme(storedTheme);
@@ -229,6 +248,62 @@ export function SettingsScreen({navigation}: Props) {
       showToast('Export failed — please try again', {type: 'error'});
     } finally {
       setExporting(false);
+    }
+  }, [showToast]);
+
+  const handleLoadDemoRow = useCallback(() => {
+    if (demoLoaded) {
+      showToast('Demo data already loaded', {type: 'info'});
+      return;
+    }
+    setDemoLoadSheetOpen(true);
+  }, [demoLoaded, showToast]);
+
+  const handleLoadDemo = useCallback(async () => {
+    setDemoBusy(true);
+    try {
+      const result = await seedDemoData(getDb());
+      bumpDataVersion();
+      setDemoLoaded(true);
+      setDemoLoadSheetOpen(false);
+      showToast(
+        result === 'already-loaded'
+          ? 'Demo data already loaded'
+          : 'Demo data loaded',
+        {type: 'success'},
+      );
+    } catch {
+      showToast('Could not load demo data — please try again', {type: 'error'});
+    } finally {
+      setDemoBusy(false);
+    }
+  }, [showToast]);
+
+  const handleRemoveDemoRow = useCallback(() => {
+    if (!demoLoaded) {
+      showToast('No demo data to remove', {type: 'info'});
+      return;
+    }
+    setDemoRemoveSheetOpen(true);
+  }, [demoLoaded, showToast]);
+
+  const handleRemoveDemo = useCallback(async () => {
+    setDemoBusy(true);
+    try {
+      const result = await removeDemoData(getDb());
+      bumpDataVersion();
+      setDemoLoaded(false);
+      setDemoRemoveSheetOpen(false);
+      showToast(
+        result === 'removed' ? 'Demo data removed' : 'No demo data to remove',
+        {type: 'success'},
+      );
+    } catch {
+      showToast('Could not remove demo data — please try again', {
+        type: 'error',
+      });
+    } finally {
+      setDemoBusy(false);
     }
   }, [showToast]);
 
@@ -362,13 +437,43 @@ export function SettingsScreen({navigation}: Props) {
           />
         </Card>
 
-        <SectionHeader title="Automation" style={styles.sectionGap} />
+        <SectionHeader title="Money hub" style={styles.sectionGap} />
         <Card style={styles.card}>
           <SettingsRow
             icon={Repeat}
             title="Recurring payments"
             subtitle="Rent, subscriptions and credit-card bills — get reminded, confirm in one tap"
             onPress={() => navigation.navigate('Recurring')}
+          />
+          <SettingsRow
+            icon={HandCoins}
+            title="People & money"
+            subtitle="Track money lent to or borrowed from people, with reminders"
+            onPress={() => navigation.navigate('People')}
+          />
+          <SettingsRow
+            icon={BadgeIndianRupee}
+            title="Salary"
+            subtitle="Expected date, credit confirmation and history"
+            onPress={() => navigation.navigate('Salary')}
+          />
+          <SettingsRow
+            icon={TrendingUp}
+            title="Investments"
+            subtitle="Manual tracking of mutual funds, FDs, stocks and more"
+            onPress={() => navigation.navigate('Investments')}
+          />
+          <SettingsRow
+            icon={PiggyBank}
+            title="Savings goals"
+            subtitle="Targets, contributions and save-money reminders"
+            onPress={() => navigation.navigate('SavingsGoals')}
+          />
+          <SettingsRow
+            icon={BellRing}
+            title="Money reminders"
+            subtitle="Choose what morning and evening reminders include"
+            onPress={() => navigation.navigate('MoneyReminders')}
           />
         </Card>
 
@@ -390,6 +495,22 @@ export function SettingsScreen({navigation}: Props) {
 
         <SectionHeader title="Data" style={styles.sectionGap} />
         <Card style={styles.card}>
+          <SettingsRow
+            icon={Database}
+            title="Load demo data"
+            subtitle={
+              demoLoaded
+                ? 'Demo data is loaded — remove it anytime below'
+                : 'Add sample transactions, goals and more to explore the app'
+            }
+            onPress={handleLoadDemoRow}
+          />
+          <SettingsRow
+            icon={Eraser}
+            title="Remove demo data"
+            subtitle="Delete only the sample records added by Load demo data"
+            onPress={handleRemoveDemoRow}
+          />
           <SettingsRow
             icon={FileDown}
             title="Export transactions (CSV)"
@@ -455,6 +576,63 @@ export function SettingsScreen({navigation}: Props) {
             variant="ghost"
             fullWidth
             onPress={() => setDeleteSheetOpen(false)}
+          />
+        </View>
+      </BottomSheet>
+      <BottomSheet
+        visible={demoLoadSheetOpen}
+        onClose={() => setDemoLoadSheetOpen(false)}
+        title="Load demo data?">
+        <View style={styles.deleteSheet}>
+          <Text variant="body" color="textSecondary">
+            This adds sample records — transactions, budgets, a recurring rent
+            rule, an overdue credit-card bill, salary, investments, a savings
+            goal, people you lent to or borrowed from, and detected expenses —
+            so you can explore every screen. Your existing data is kept, and
+            you can remove just the demo records anytime with "Remove demo
+            data".
+          </Text>
+          <Button
+            title="Load demo data"
+            variant="primary"
+            icon={Database}
+            fullWidth
+            loading={demoBusy}
+            onPress={() => handleLoadDemo()}
+            accessibilityHint="Adds sample records alongside your existing data"
+          />
+          <Button
+            title="Cancel"
+            variant="ghost"
+            fullWidth
+            onPress={() => setDemoLoadSheetOpen(false)}
+          />
+        </View>
+      </BottomSheet>
+
+      <BottomSheet
+        visible={demoRemoveSheetOpen}
+        onClose={() => setDemoRemoveSheetOpen(false)}
+        title="Remove demo data?">
+        <View style={styles.deleteSheet}>
+          <Text variant="body" color="textSecondary">
+            This deletes only the sample records added by "Load demo data".
+            Everything you entered yourself stays untouched.
+          </Text>
+          <Button
+            title="Remove demo data"
+            variant="danger"
+            icon={Eraser}
+            fullWidth
+            loading={demoBusy}
+            onPress={() => handleRemoveDemo()}
+            accessibilityHint="Deletes only the sample demo records"
+          />
+          <Button
+            title="Cancel"
+            variant="ghost"
+            fullWidth
+            onPress={() => setDemoRemoveSheetOpen(false)}
           />
         </View>
       </BottomSheet>

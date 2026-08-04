@@ -59,13 +59,14 @@ export function ToastProvider({children}: {children: ReactNode}) {
   const styles = useMemo(() => createStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   const [toast, setToast] = useState<ToastState | null>(null);
-  const translateY = useRef(new Animated.Value(100)).current;
+  // Off-screen above the viewport; the toast slides down from the top edge.
+  const translateY = useRef(new Animated.Value(-100)).current;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nextId = useRef(1);
 
   const dismiss = useCallback(() => {
     Animated.timing(translateY, {
-      toValue: 100,
+      toValue: -100,
       duration: 180,
       useNativeDriver: true,
     }).start(() => setToast(null));
@@ -83,7 +84,7 @@ export function ToastProvider({children}: {children: ReactNode}) {
         duration: options?.duration ?? DEFAULT_DURATION,
       };
       setToast(next);
-      translateY.setValue(100);
+      translateY.setValue(-100);
       Animated.timing(translateY, {
         toValue: 0,
         duration: 200,
@@ -115,10 +116,12 @@ export function ToastProvider({children}: {children: ReactNode}) {
           key={toast.id}
           accessibilityLiveRegion="polite"
           accessibilityRole="alert"
+          testID="toast"
           style={[
             styles.toast,
             {
-              bottom: insets.bottom + theme.spacing.xl,
+              // Top of the screen, below the status bar / notch.
+              top: insets.top + theme.spacing.xl,
               borderRadius: theme.radius.md,
               borderLeftColor: accentColor(toast.type, theme.colors),
               transform: [{translateY}],

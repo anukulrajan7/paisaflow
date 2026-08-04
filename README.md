@@ -6,19 +6,35 @@ connection. AI spending summaries (via OpenRouter) are an optional add-on
 that never blocks core tracking.
 
 - React Native Community CLI **0.86.2** (New Architecture, Hermes) + TypeScript (strict)
-- No Expo, no Firebase, no remote database
+- No Expo, no Firebase; remote database optional (Supabase cloud sync)
 - Money is stored as integer minor units — never floats
 
 ## Features
 
 - Accounts (cash/bank/etc.) with opening balances, archive support
+- Balances dashboard: total available, credit-card outstanding, net cash flow
 - Income / expense / transfer transactions with categories, tags, merchant,
   notes, payment method; soft delete with undo and restore
-- Transaction list with search, filters, and pagination
+- Transaction list with search, filters (draft/apply sheet with live result
+  count), and pagination
 - Dashboard: monthly totals, category breakdown, budget usage
 - Budgets: overall + per-category, monthly cycle with configurable start day
 - Insights: daily/weekly/monthly trends and category distribution (SVG charts)
-- Daily reminder notifications (morning + evening, local only)
+- Recurring payments: due/overdue tracking, month-end clamping, one-tap
+  confirm, credit-card bill tracking
+- People & money: personal lending ledger with partial repayments, due dates,
+  overdue tracking, and call/SMS/WhatsApp follow-ups
+- Salary tracking: expected/credited/partial/bonus/delayed states with
+  one-tap confirm
+- Investments: holdings with contributions, manual valuation, gain/loss,
+  allocation, and maturity tracking
+- Savings goals: scheduled contributions with suggested amounts and progress
+- Smart reminders: morning/evening notifications whose content is composed
+  from your data (due lendings, salary, investments, savings, spending)
+- App lock: keychain-backed PIN with 30-second background re-lock
+- Optional cloud sync/backup via Supabase (built-in project or your own)
+- Optional SMS expense auto-tracking with a review inbox and paste import
+  (100% on-device parsing)
 - Optional AI monthly summary via OpenRouter (your own API key, stored in the
   device keystore)
 - CSV export of transactions
@@ -50,9 +66,12 @@ src/
   app/            # App root, bootstrap, navigation, providers
   database/       # connection, migrations, repositories, queries, seeds, types
   design-system/  # tokens (light+dark), theme provider, shared components, icons
-  features/       # accounts, ai-summary, budgets, categories, home, insights,
-                  # onboarding, settings, transactions
-  services/       # connectivity, export (CSV), notifications, openrouter, security
+  features/       # accounts, ai-summary, budgets, categories, cloud, home,
+                  # insights, investments, notifications, onboarding, people,
+                  # recurring, salary, savings, security, settings, tracking,
+                  # transactions
+  services/       # connectivity, export (CSV), notifications, openrouter,
+                  # security, sms, supabase
   store/          # zustand UI/session stores
   utils/          # date, id, money helpers
 android/          # native Android project (signing, icons, manifest)
@@ -123,13 +142,55 @@ npm run android     # build + install + launch debug app (terminal 2)
   a key or connectivity the app shows the deterministic local summary / a
   graceful offline state.
 
+## Cloud sync (Supabase, optional)
+
+Quickstart:
+
+1. Use the **built-in project** (bundled credentials in the gitignored
+   `src/config/supabase.ts`) — nothing to set up, or enter **your own
+   project**'s URL + anon key in **Settings → Cloud sync** (stored only in
+   the device keychain).
+2. For your own project, run `supabase/schema.sql` in its SQL Editor once —
+   the one required manual dashboard step. Full walkthrough, RLS details,
+   and the email-confirmation fix:
+   [supabase/README.md](supabase/README.md).
+3. Create an account / sign in, then **Sync now** (or enable "Sync when
+   this screen opens").
+
+Sync is watermark-based last-write-wins over `accounts`, `categories`,
+`transactions` (soft deletes included), `budgets`, and `recurring_rules`.
+It only runs from the Cloud sync screen — nothing syncs in the background,
+and the app is fully functional without it. Details in
+[PHASE8.md](PHASE8.md).
+
+## App lock
+
+Settings → App lock sets a 4–6 digit PIN stored only in the device
+keychain. The app asks for it on cold start and again after more than 30
+seconds in the background. There is no recovery — forgetting the PIN means
+reinstalling.
+
+## Recurring, people, salary, investments, savings
+
+Phase 9's money hub and phase 8's recurring payments are documented in
+[PHASE9.md](PHASE9.md) and [PHASE8.md](PHASE8.md) — virtual accounts,
+transfer-based money movement (lending/investing/saving never counts as
+income/expense), lending ledger, salary states, investment valuation,
+savings-goal math, and the balances dashboard.
+
 ## Notifications
 
 - Daily reminders via `@notifee/react-native`, scheduled as local repeating
   `TimestampTrigger`s — no server involved.
+- Bodies are **composed on-device from your data** when scheduled: due and
+  overdue lendings, expected/unconfirmed salary, investment contributions,
+  savings-goal contributions, and today's spending — each includable topic
+  has a toggle under Settings → Money reminders. Tapping a reminder
+  deep-links to the relevant screen. Content reflects data as of the last
+  app open/edit, not live at fire time.
 - Channel `reminders` (created before scheduling), stable notification ids
   (`paisaflow-morning` / `paisaflow-evening`), cancelled and rescheduled on
-  every settings sync (time change, timezone change).
+  every settings sync and (debounced) after data changes.
 - Defaults: morning 08:30, evening 20:30; configurable in onboarding and
   Settings.
 - Android 13+: `POST_NOTIFICATIONS` is declared in the manifest and requested
@@ -169,7 +230,7 @@ Walnut/Axio-style expense detection from bank/UPI SMS alerts.
 ## Tests & checks
 
 ```sh
-npm test            # jest — 24 suites, 169 tests
+npm test            # jest — 53 suites, 521 tests
 npm run typecheck   # tsc --noEmit
 npm run lint        # eslint
 ```
@@ -265,9 +326,12 @@ modules. Enable only after a full QA pass on a minified build.
 
 - Transactions carry a per-row currency but the app assumes a single default
   currency (INR) for totals — no multi-currency aggregation.
-- Recurring transactions are not implemented (placeholder only).
-- No cloud sync / backup-restore; data lives only on the device (CSV export
-  is the escape hatch).
+- Cloud sync is manual/optional and one-way-delete-limited: only transaction
+  soft-deletes propagate; hard deletes of accounts/categories/budgets/
+  recurring rules don't sync yet (see PHASE8.md).
+- Reminder notification content is composed at schedule time — it reflects
+  data as of the last app open/edit, not live at fire time (see PHASE9.md).
+- Investment valuations are manual; there are no market-data APIs.
 - AI summaries require the user's own OpenRouter key and connectivity; there
   is no bundled key or proxy.
 - iOS project exists from the template but is not actively maintained.

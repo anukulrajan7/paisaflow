@@ -2,8 +2,11 @@ import notifee from '@notifee/react-native';
 
 import {
   requestNotificationPermission,
+  subscribeReminderSyncToDataChanges,
   syncRemindersFromSettings,
+  unsubscribeReminderSyncFromDataChanges,
 } from '../index';
+import {useDataVersionStore} from '../../../store/dataVersionStore';
 import {
   EVENING_REMINDER_ID,
   MORNING_REMINDER_ID,
@@ -140,6 +143,52 @@ describe('syncRemindersFromSettings', () => {
 
     expect(mockedNotifee.cancelTriggerNotifications).toHaveBeenCalled();
     expect(mockedNotifee.createTriggerNotification).not.toHaveBeenCalled();
+  });
+
+  it('attaches a deep-link screen to each scheduled notification', async () => {
+    // The repositories mock yields no reminder content, so composition falls
+    // back to the static copy and its default targets.
+    await syncRemindersFromSettings();
+
+    const [morningNotification] =
+      mockedNotifee.createTriggerNotification.mock.calls[0];
+    const [eveningNotification] =
+      mockedNotifee.createTriggerNotification.mock.calls[1];
+    expect(morningNotification.data).toEqual({screen: 'Home'});
+    expect(eveningNotification.data).toEqual({screen: 'AddTransaction'});
+  });
+});
+
+describe('subscribeReminderSyncToDataChanges', () => {
+  afterEach(() => {
+    unsubscribeReminderSyncFromDataChanges();
+    jest.useRealTimers();
+  });
+
+  it('re-runs the sync once, debounced, after data changes', async () => {
+    jest.useFakeTimers();
+    subscribeReminderSyncToDataChanges();
+
+    useDataVersionStore.getState().bumpDataVersion();
+    useDataVersionStore.getState().bumpDataVersion();
+    expect(mockedNotifee.cancelTriggerNotifications).not.toHaveBeenCalled();
+
+    await jest.advanceTimersByTimeAsync(2000);
+    expect(mockedNotifee.cancelTriggerNotifications).toHaveBeenCalledTimes(1);
+    expect(mockedNotifee.cancelTriggerNotifications).toHaveBeenCalledWith([
+      MORNING_REMINDER_ID,
+      EVENING_REMINDER_ID,
+    ]);
+  });
+
+  it('is idempotent — a second subscribe does not double-sync', async () => {
+    jest.useFakeTimers();
+    subscribeReminderSyncToDataChanges();
+    subscribeReminderSyncToDataChanges();
+
+    useDataVersionStore.getState().bumpDataVersion();
+    await jest.advanceTimersByTimeAsync(2000);
+    expect(mockedNotifee.cancelTriggerNotifications).toHaveBeenCalledTimes(1);
   });
 });
 

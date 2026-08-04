@@ -13,6 +13,7 @@ import {
   AppScreen,
   Button,
   Card,
+  Chip,
   Divider,
   IconButton,
   Input,
@@ -29,9 +30,13 @@ import {
   setOpenRouterApiKey,
 } from '../../../services/security/secureKeyStore';
 import {
+  CHEAP_PAID_AI_MODELS,
   DEFAULT_AI_MODEL,
+  FREE_AI_MODELS,
   ProviderError,
   createOpenRouterProvider,
+  isLikelyOpenRouterKey,
+  normalizeOpenRouterApiKey,
 } from '../../../services/openrouter';
 import {friendlyMessageFor} from '../../ai-summary/hooks/useAiInsight';
 
@@ -72,13 +77,16 @@ export function AiSettingsScreen({navigation}: Props) {
   }, []);
 
   const onSaveKey = useCallback(async () => {
-    if (!keyInput.trim()) {
+    // Pasted keys often carry a trailing newline or stray spaces, which
+    // OpenRouter rejects with a 401 that looks exactly like a bad key.
+    const normalized = normalizeOpenRouterApiKey(keyInput);
+    if (!normalized) {
       showToast('Enter an API key first.', {type: 'error'});
       return;
     }
     setSavingKey(true);
     try {
-      await setOpenRouterApiKey(keyInput);
+      await setOpenRouterApiKey(normalized);
       setHasKey(true);
       setKeyInput('');
       setTestResult(null);
@@ -136,7 +144,14 @@ export function AiSettingsScreen({navigation}: Props) {
     } catch (error) {
       const kind =
         error instanceof ProviderError ? error.kind : 'unknown';
-      setTestResult({ok: false, message: friendlyMessageFor(kind)});
+      const details =
+        error instanceof ProviderError ? error.details : undefined;
+      setTestResult({
+        ok: false,
+        message: details
+          ? `${friendlyMessageFor(kind)}\nProvider says: ${details}`
+          : friendlyMessageFor(kind),
+      });
     } finally {
       setTesting(false);
     }
@@ -190,6 +205,12 @@ export function AiSettingsScreen({navigation}: Props) {
             editable={!loading}
             containerStyle={styles.field}
           />
+          {keyInput.length > 0 && !isLikelyOpenRouterKey(keyInput) ? (
+            <Text variant="caption" color="warning" style={styles.cardHint}>
+              This doesn&apos;t look like an OpenRouter key (they start with
+              sk-or-). You can still save it.
+            </Text>
+          ) : null}
           <View style={styles.buttonRow}>
             <Button
               title={hasKey ? 'Replace key' : 'Save key'}
@@ -211,6 +232,38 @@ export function AiSettingsScreen({navigation}: Props) {
 
         <Card>
           <Text variant="bodyMedium">Model</Text>
+          <Text variant="caption" color="textSecondary" style={styles.cardHint}>
+            Free
+          </Text>
+          <View style={styles.chipRow}>
+            {FREE_AI_MODELS.map(model => (
+              <Chip
+                key={model.id}
+                label={model.id}
+                selected={modelInput.trim() === model.id}
+                onPress={() => setModelInput(model.id)}
+                disabled={loading}
+              />
+            ))}
+          </View>
+          <Text variant="caption" color="textSecondary" style={styles.cardHint}>
+            Cheap paid (need OpenRouter credits)
+          </Text>
+          <View style={styles.chipRow}>
+            {CHEAP_PAID_AI_MODELS.map(model => (
+              <Chip
+                key={model.id}
+                label={`${model.id} · paid`}
+                selected={modelInput.trim() === model.id}
+                onPress={() => setModelInput(model.id)}
+                disabled={loading}
+                accessibilityLabel={`${model.id}, paid, ${model.priceHint ?? ''}`}
+              />
+            ))}
+          </View>
+          <Text variant="caption" color="textMuted" style={styles.cardHint}>
+            {CHEAP_PAID_AI_MODELS.map(m => `${m.id} ${m.priceHint}`).join('\n')}
+          </Text>
           <Input
             label="Model name"
             value={modelInput}
@@ -219,7 +272,7 @@ export function AiSettingsScreen({navigation}: Props) {
             autoCapitalize="none"
             autoCorrect={false}
             editable={!loading}
-            hint={`Default: ${DEFAULT_AI_MODEL}`}
+            hint={`Default: ${DEFAULT_AI_MODEL} — auto-picks a free model, so it keeps working even when individual models are retired.`}
             containerStyle={styles.field}
           />
           <View style={styles.buttonRow}>
@@ -289,6 +342,12 @@ const createStyles = (theme: AppTheme) =>
     },
     cardHint: {marginTop: theme.spacing.xs},
     field: {marginTop: theme.spacing.md},
+    chipRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: theme.spacing.sm,
+      marginTop: theme.spacing.xs,
+    },
     buttonRow: {
       flexDirection: 'row',
       gap: theme.spacing.md,

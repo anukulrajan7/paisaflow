@@ -1,6 +1,7 @@
 import {migration001} from './001_initial';
 import {migration002} from './002_detected_expenses';
 import {migration003} from './003_recurring_rules';
+import {migration004} from './004_phase9_money_hub';
 import type {Migration} from './migrationRunner';
 
 /**
@@ -11,6 +12,7 @@ export const MIGRATIONS: Migration[] = [
   migration001,
   migration002,
   migration003,
+  migration004,
 ];
 
 export {runMigrations} from './migrationRunner';

@@ -13,11 +13,13 @@
  * the rest of the app never touches this screen's state.
  */
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {ScrollView, StyleSheet, Switch, View} from 'react-native';
+import {Pressable, ScrollView, StyleSheet, Switch, View} from 'react-native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {
   ArrowLeft,
   Check,
+  ChevronDown,
+  ChevronRight,
   CloudUpload,
   KeyRound,
   TriangleAlert,
@@ -40,6 +42,7 @@ import {
 import {useTheme} from '../../../design-system/theme';
 import type {AppTheme} from '../../../design-system/tokens';
 import type {SettingsStackParamList} from '../../../app/navigation/types';
+import {SUPABASE_ANON_KEY, SUPABASE_URL} from '../../../config';
 import {getSettingsRepository} from '../../../database/repositories';
 import {useIsOnline} from '../../../services/connectivity';
 import {
@@ -62,6 +65,18 @@ type Props = NativeStackScreenProps<SettingsStackParamList, 'CloudSync'>;
 type AuthMode = 'sign_in' | 'sign_up';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Deep link the app passes as Supabase's emailRedirectTo, so the confirm
+ * email opens the app instead of the dashboard's default localhost URL.
+ * Matched by the paisaflow:// intent-filter in AndroidManifest.xml; must
+ * also be listed under Authentication → URL Configuration → Redirect URLs.
+ */
+const AUTH_REDIRECT_URL = 'paisaflow://auth';
+
+/** True when the build ships its own Supabase project (src/config/supabase.ts). */
+const HAS_BUNDLED_PROJECT =
+  SUPABASE_URL.trim().length > 0 && SUPABASE_ANON_KEY.trim().length > 0;
 
 /** Show only the head of the local part: an***@example.com */
 function maskEmail(email: string): string {
@@ -101,6 +116,7 @@ export function CloudSyncScreen({navigation}: Props) {
   const [overrideUrl, setOverrideUrl] = useState('');
   const [overrideKey, setOverrideKey] = useState('');
   const [overrideBusy, setOverrideBusy] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const autoSyncedOnce = useRef(false);
 
@@ -211,6 +227,7 @@ export function CloudSyncScreen({navigation}: Props) {
         const {data, error} = await client.auth.signUp({
           email: trimmedEmail,
           password,
+          options: {emailRedirectTo: AUTH_REDIRECT_URL},
         });
         if (error) {
           setFormError(error.message);
@@ -220,7 +237,11 @@ export function CloudSyncScreen({navigation}: Props) {
           showToast('Account created — signed in.', {type: 'success'});
         } else {
           setFormNotice(
-            'Account created. Confirm it from the email Supabase sent you, then sign in.',
+            'Account created. Check your email to confirm, then sign in. ' +
+              'If the link opens localhost, ask the project owner to update ' +
+              'the Supabase Auth URL settings (Authentication → URL ' +
+              'Configuration) or disable email confirmation ' +
+              '(Authentication → Sign In / Up → Email).',
           );
           setPassword('');
         }
@@ -299,6 +320,9 @@ export function CloudSyncScreen({navigation}: Props) {
   };
 
   const configured = credentials != null;
+  // With a bundled project the override UI is an advanced escape hatch —
+  // collapsed by default. An active override always shows it expanded.
+  const showAdvanced = advancedOpen || credentials?.source === 'override';
   const failedTables = lastResult?.tables.filter(t => t.status === 'error') ?? [];
 
   return (
@@ -326,9 +350,9 @@ export function CloudSyncScreen({navigation}: Props) {
             <Text variant="bodyMedium">Optional backup</Text>
           </View>
           <Text variant="caption" color="textSecondary" style={styles.cardHint}>
-            Optional. Local data stays the source of truth; sync keeps a
-            backup copy in YOUR Supabase project. PaisaFlow works exactly the
-            same without it.
+            {HAS_BUNDLED_PROJECT
+              ? 'Optional. Local data stays the source of truth; sync keeps a backup copy in the built-in cloud project. Just create an account below — no setup needed.'
+              : 'Optional. Local data stays the source of truth; sync keeps a backup copy in YOUR Supabase project. PaisaFlow works exactly the same without it.'}
           </Text>
         </Card>
 
@@ -513,52 +537,74 @@ export function CloudSyncScreen({navigation}: Props) {
 
         {!loading && configured ? (
           <Card>
-            <View style={styles.cardTitleRow}>
-              <KeyRound size={18} color={theme.colors.textSecondary} />
-              <Text variant="bodyMedium">Custom project</Text>
-            </View>
-            <Text variant="caption" color="textSecondary" style={styles.cardHint}>
-              {credentials.source === 'override'
-                ? 'Using a custom project saved on this device. Remove it to fall back to the bundled project.'
-                : 'Point the app at a different Supabase project. Switching projects signs you out of the current one.'}
-            </Text>
-            <Input
-              label="Project URL"
-              value={overrideUrl}
-              onChangeText={setOverrideUrl}
-              placeholder="https://your-project.supabase.co"
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="url"
-              containerStyle={styles.field}
-            />
-            <Input
-              label="Anon key"
-              value={overrideKey}
-              onChangeText={setOverrideKey}
-              placeholder="eyJhbGciOi…"
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
-              containerStyle={styles.field}
-            />
-            <View style={styles.buttonRow}>
-              <Button
-                title="Use this project"
-                onPress={onSaveOverride}
-                loading={overrideBusy}
-                disabled={!overrideUrl.trim() || !overrideKey.trim()}
-                size="sm"
-              />
-              {credentials.source === 'override' ? (
-                <Button
-                  title="Remove override"
-                  onPress={onClearOverride}
-                  variant="danger"
-                  size="sm"
+            {HAS_BUNDLED_PROJECT ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{expanded: showAdvanced}}
+                accessibilityLabel="Advanced: use your own Supabase project"
+                onPress={() => setAdvancedOpen(open => !open)}
+                style={styles.advancedHeader}>
+                {showAdvanced ? (
+                  <ChevronDown size={18} color={theme.colors.textSecondary} />
+                ) : (
+                  <ChevronRight size={18} color={theme.colors.textSecondary} />
+                )}
+                <Text variant="bodyMedium" style={styles.advancedTitle}>
+                  Advanced: use your own Supabase project
+                </Text>
+              </Pressable>
+            ) : (
+              <View style={styles.cardTitleRow}>
+                <KeyRound size={18} color={theme.colors.textSecondary} />
+                <Text variant="bodyMedium">Custom project</Text>
+              </View>
+            )}
+            {!HAS_BUNDLED_PROJECT || showAdvanced ? (
+              <>
+                <Text variant="caption" color="textSecondary" style={styles.cardHint}>
+                  {credentials.source === 'override'
+                    ? 'Using a custom project saved on this device. Remove it to fall back to the bundled project.'
+                    : 'Point the app at a different Supabase project. Switching projects signs you out of the current one.'}
+                </Text>
+                <Input
+                  label="Project URL"
+                  value={overrideUrl}
+                  onChangeText={setOverrideUrl}
+                  placeholder="https://your-project.supabase.co"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="url"
+                  containerStyle={styles.field}
                 />
-              ) : null}
-            </View>
+                <Input
+                  label="Anon key"
+                  value={overrideKey}
+                  onChangeText={setOverrideKey}
+                  placeholder="eyJhbGciOi…"
+                  secureTextEntry
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  containerStyle={styles.field}
+                />
+                <View style={styles.buttonRow}>
+                  <Button
+                    title="Use this project"
+                    onPress={onSaveOverride}
+                    loading={overrideBusy}
+                    disabled={!overrideUrl.trim() || !overrideKey.trim()}
+                    size="sm"
+                  />
+                  {credentials.source === 'override' ? (
+                    <Button
+                      title="Remove override"
+                      onPress={onClearOverride}
+                      variant="danger"
+                      size="sm"
+                    />
+                  ) : null}
+                </View>
+              </>
+            ) : null}
           </Card>
         ) : null}
 
@@ -598,4 +644,11 @@ const createStyles = (theme: AppTheme) =>
       minHeight: 44,
     },
     switchLabel: {flex: 1, gap: 2},
+    advancedHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+      minHeight: 44,
+    },
+    advancedTitle: {flex: 1},
   });

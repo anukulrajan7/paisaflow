@@ -2,7 +2,10 @@ import {getDb} from '../../database/connection/connection';
 import {MIGRATIONS, runMigrations} from '../../database/migrations';
 import {seedDefaultData} from '../../database/seeds';
 import {createSettingsRepository} from '../../database/repositories/settingsRepository';
-import {syncRemindersFromSettings} from '../../services/notifications';
+import {
+  subscribeReminderSyncToDataChanges,
+  syncRemindersFromSettings,
+} from '../../services/notifications';
 import {useBootstrapStore} from '../../store/bootstrapStore';
 import {useThemeStore} from '../../store/themeStore';
 
@@ -38,6 +41,14 @@ export async function runBootstrap(): Promise<void> {
     // notification failures must never break bootstrap.
     try {
       await syncRemindersFromSettings();
+    } catch {
+      // ignore — reminders are non-critical
+    }
+
+    // Keep reminder copy in sync with later data changes (debounced, 2s).
+    // Idempotent and best-effort — must never break bootstrap.
+    try {
+      subscribeReminderSyncToDataChanges();
     } catch {
       // ignore — reminders are non-critical
     }

@@ -17,6 +17,14 @@ import {AboutScreen} from '../../features/settings/screens/AboutScreen';
 import {RecurringRulesScreen} from '../../features/recurring/screens/RecurringRulesScreen';
 import {AppLockSettingsScreen} from '../../features/security/screens/AppLockSettingsScreen';
 import {CloudSyncScreen} from '../../features/cloud/screens/CloudSyncScreen';
+import {PeopleScreen} from '../../features/people/screens/PeopleScreen';
+import {PersonLedgerScreen} from '../../features/people/screens/PersonLedgerScreen';
+import {SalaryScreen} from '../../features/salary/screens/SalaryScreen';
+import {InvestmentsScreen} from '../../features/investments/screens/InvestmentsScreen';
+import {InvestmentDetailsScreen} from '../../features/investments/screens/InvestmentDetailsScreen';
+import {SavingsGoalsScreen} from '../../features/savings/screens/SavingsGoalsScreen';
+import {SavingsGoalDetailsScreen} from '../../features/savings/screens/SavingsGoalDetailsScreen';
+import {MoneyRemindersScreen} from '../../features/notifications/screens/MoneyRemindersScreen';
 
 import type {
   AddStackParamList,
@@ -104,6 +112,29 @@ export function SettingsStackNavigator() {
       />
       <SettingsStack.Screen name="AppLock" component={AppLockSettingsScreen} />
       <SettingsStack.Screen name="CloudSync" component={CloudSyncScreen} />
+      <SettingsStack.Screen name="People" component={PeopleScreen} />
+      <SettingsStack.Screen
+        name="PersonLedger"
+        component={PersonLedgerScreen}
+      />
+      <SettingsStack.Screen name="Salary" component={SalaryScreen} />
+      <SettingsStack.Screen name="Investments" component={InvestmentsScreen} />
+      <SettingsStack.Screen
+        name="InvestmentDetails"
+        component={InvestmentDetailsScreen}
+      />
+      <SettingsStack.Screen
+        name="SavingsGoals"
+        component={SavingsGoalsScreen}
+      />
+      <SettingsStack.Screen
+        name="SavingsGoalDetails"
+        component={SavingsGoalDetailsScreen}
+      />
+      <SettingsStack.Screen
+        name="MoneyReminders"
+        component={MoneyRemindersScreen}
+      />
     </SettingsStack.Navigator>
   );
 }

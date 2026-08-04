@@ -15,7 +15,7 @@ import {useTheme} from '../../../design-system/theme';
 import type {AppTheme} from '../../../design-system/tokens';
 import type {Account, AccountType} from '../../../database/types';
 import type {AccountFormValues} from '../schemas/accountFormSchema';
-import {accountFormSchema} from '../schemas/accountFormSchema';
+import {ACCOUNT_TYPES, accountFormSchema} from '../schemas/accountFormSchema';
 import {ACCOUNT_TYPE_META} from './accountTypeMeta';
 
 export type AccountFormMode = {kind: 'add'} | {kind: 'edit'; account: Account};
@@ -70,7 +70,13 @@ export function AccountFormSheet({
         mode.kind === 'edit'
           ? {
               name: mode.account.name,
-              type: mode.account.type,
+              // Virtual account types (investment/person) are managed by
+              // their own features; fall back for the form's union.
+              type: (ACCOUNT_TYPES as readonly string[]).includes(
+                mode.account.type,
+              )
+                ? (mode.account.type as AccountFormValues['type'])
+                : 'cash',
               openingBalanceMinor: mode.account.openingBalanceMinor,
             }
           : ADD_DEFAULTS,

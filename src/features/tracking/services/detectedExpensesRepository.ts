@@ -46,6 +46,20 @@ export interface NewDetectedExpense {
 /** 'inserted' | 'duplicate' — callers surface both to the user. */
 export type InsertResult = 'inserted' | 'duplicate';
 
+/**
+ * Replacement parse output for a pending row (e.g. after AI re-analysis).
+ * The dedupe hash is intentionally NOT updated: the message is unchanged.
+ */
+export interface ParsedUpdate {
+  parsedJson: string;
+  amountMinor: number;
+  direction: 'debit' | 'credit';
+  merchant: string | null;
+  accountHint: string | null;
+  occurredAt: number;
+  categoryId: string | null;
+}
+
 interface DetectedExpenseRow {
   id: string;
   source: string;
@@ -137,6 +151,28 @@ export function createDetectedExpensesRepository(db: SqlDb) {
         ['pending'],
       );
       return rows.map(mapRow);
+    },
+
+    /** Overwrite the parse output of a still-pending row. */
+    async updateParsed(id: string, patch: ParsedUpdate): Promise<void> {
+      await db.executeAsync(
+        `UPDATE detected_expenses
+         SET parsed_json = ?, amount_minor = ?, direction = ?, merchant = ?,
+             account_hint = ?, occurred_at = ?, category_id = ?, updated_at = ?
+         WHERE id = ? AND status = ?`,
+        [
+          patch.parsedJson,
+          patch.amountMinor,
+          patch.direction,
+          patch.merchant,
+          patch.accountHint,
+          patch.occurredAt,
+          patch.categoryId,
+          Date.now(),
+          id,
+          'pending',
+        ],
+      );
     },
 
     async countPending(): Promise<number> {

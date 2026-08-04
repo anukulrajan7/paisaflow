@@ -32,6 +32,7 @@ import {AiInsightCard} from '../../ai-summary';
 import {RecurringDueCard} from '../../recurring';
 import {CategorySpendRow} from '../components/CategorySpendRow';
 import {DashboardSkeleton} from '../components/DashboardSkeleton';
+import {MoneyHubCard} from '../components/MoneyHubCard';
 import {MonthSelector} from '../components/MonthSelector';
 import {useDashboard} from '../hooks/useDashboard';
 import {describeExpenseChange, greetingFor} from '../utils/dashboardText';
@@ -198,6 +199,8 @@ export function HomeScreen({navigation}: Props) {
         </Card>
 
         <RecurringDueCard />
+
+        <MoneyHubCard />
 
         {budgetUsage ? (
           <Card

@@ -11,10 +11,27 @@ import {parseToMinorUnits} from '../../utils/money';
 
 export type ParsedDirection = 'debit' | 'credit';
 
+/** Payment rail the alert came through, detected from keywords. */
+export type ParsedInstrument =
+  | 'credit_card'
+  | 'debit_card'
+  | 'upi'
+  | 'net_banking'
+  | 'atm'
+  | 'unknown';
+
+/**
+ * 'low' when several plausible transaction amounts existed and the winner was
+ * picked by proximity to the verb — review UIs may want to flag these.
+ */
+export type ParseConfidence = 'high' | 'low';
+
 export interface ParsedTransactionMessage {
   direction: ParsedDirection;
   /** Integer minor units (paise). Never a float. */
   amountMinor: number;
+  confidence: ParseConfidence;
+  instrument: ParsedInstrument;
   /** Merchant / payee / payer, best-effort. */
   merchant: string | null;
   /** Last 4 digits of the account/card, when present. */
@@ -56,24 +73,74 @@ function isNonTransaction(body: string): boolean {
 /* Amount                                                              */
 /* ------------------------------------------------------------------ */
 
-/** "Rs.1,234.00" / "INR 500" / "₹1,050.50" (symbol before or after). */
-const AMOUNT_PATTERNS = [
-  /(?:\b(?:rs\.?|inr)\b|₹)\s*([0-9][0-9,]*(?:\.\d{1,2})?)/i,
-  /\b([0-9][0-9,]*(?:\.\d{1,2})?)\s*(?:rs\.?|inr)\b/i,
-];
+/**
+ * Every "Rs.1,234.00" / "INR 500" / "₹1,050.50" amount in the body, with its
+ * character offset (symbol before or after the number).
+ */
+const AMOUNT_REGEX =
+  /(?:\b(?:rs\.?|inr)\b|₹)\s*([0-9][0-9,]*(?:\.\d{1,2})?)|\b([0-9][0-9,]*(?:\.\d{1,2})?)\s*(?:rs\.?|inr)\b/gi;
 
-function extractAmountMinor(body: string): number | null {
-  for (const pattern of AMOUNT_PATTERNS) {
-    const match = body.match(pattern);
-    if (!match) {
+interface AmountCandidate {
+  minor: number;
+  /** Char offset of the match start. */
+  index: number;
+}
+
+/**
+ * Trailing context marking an amount as a balance, never the transaction:
+ * "Avl Bal Rs.X", "available balance of Rs.X", "Bal: Rs.X". Tested against
+ * the characters immediately before the amount.
+ */
+const BALANCE_CONTEXT =
+  /(?:\bavl\.?\s*bal(?:ance)?|\bavailable\s+balance|\bclosing\s+balance|\bledger\s+balance|\bcurrent\s+balance|\bbalance|\bbal)\b[\s:=-]*(?:(?:is|of|left)\s+)?$/i;
+
+const BALANCE_CONTEXT_WINDOW = 30;
+
+function isBalanceContext(body: string, index: number): boolean {
+  const before = body.slice(Math.max(0, index - BALANCE_CONTEXT_WINDOW), index);
+  return BALANCE_CONTEXT.test(before);
+}
+
+/**
+ * Bank alerts carry several numbers — transaction amount, available balance,
+ * sometimes fees. Never take "the first number": reject amounts stated as a
+ * balance, then pick the candidate closest (in characters) to the
+ * debit/credit verb. Returns null when only balance amounts exist, rather
+ * than guessing the balance as the expense.
+ */
+function extractAmount(
+  body: string,
+  verbIndex: number,
+): {amountMinor: number; confidence: ParseConfidence} | null {
+  const candidates: AmountCandidate[] = [];
+  for (const match of body.matchAll(AMOUNT_REGEX)) {
+    const raw = match[1] ?? match[2];
+    if (!raw) {
       continue;
     }
-    const minor = parseToMinorUnits(match[1]);
+    const minor = parseToMinorUnits(raw);
     if (minor != null && minor > 0) {
-      return minor;
+      candidates.push({minor, index: match.index ?? 0});
     }
   }
-  return null;
+  const usable = candidates.filter(
+    candidate => !isBalanceContext(body, candidate.index),
+  );
+  if (usable.length === 0) {
+    return null;
+  }
+  let best = usable[0];
+  for (const candidate of usable) {
+    if (
+      Math.abs(candidate.index - verbIndex) < Math.abs(best.index - verbIndex)
+    ) {
+      best = candidate;
+    }
+  }
+  return {
+    amountMinor: best.minor,
+    confidence: usable.length > 1 ? 'low' : 'high',
+  };
 }
 
 /* ------------------------------------------------------------------ */
@@ -89,20 +156,55 @@ const CREDIT_WORDS = new Set([
 ]);
 const DEBIT_WORDS = new Set(['debited', 'withdrawn', 'spent', 'paid', 'sent', 'purchase']);
 
-function extractDirection(body: string): ParsedDirection | null {
+interface DirectionMatch {
+  direction: ParsedDirection;
+  /** Char offset of the verb — the amount closest to it wins. */
+  index: number;
+}
+
+function findDirection(body: string): DirectionMatch | null {
   // First direction verb wins — alerts state the movement up front.
-  const match = body.match(DIRECTION_WORDS);
+  const match = DIRECTION_WORDS.exec(body);
   if (!match) {
     return null;
   }
   const word = match[1].toLowerCase();
   if (CREDIT_WORDS.has(word)) {
-    return 'credit';
+    return {direction: 'credit', index: match.index};
   }
   if (DEBIT_WORDS.has(word)) {
-    return 'debit';
+    return {direction: 'debit', index: match.index};
   }
   return null;
+}
+
+/* ------------------------------------------------------------------ */
+/* Instrument                                                          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Ordered: first match wins. ATM ranks above debit card because "cash
+ * withdrawal at ATM ... Debit Card XX1234" is cash in hand, not a card
+ * payment. A bare "Card" (no credit/debit qualifier) stays 'unknown'.
+ */
+const INSTRUMENT_PATTERNS: ReadonlyArray<readonly [RegExp, ParsedInstrument]> = [
+  [/\bcredit\s*card\b/i, 'credit_card'],
+  [/\batm\b|\bcash\s+withdrawal\b/i, 'atm'],
+  [/\bdebit\s*card\b/i, 'debit_card'],
+  [/\bnet\s*banking\b|\bnetbanking\b|\b(?:imps|neft|rtgs)\b/i, 'net_banking'],
+  // "UPI", "UPIRef", "VPA ...", or a VPA handle like name@okhdfc — the handle
+  // pattern rejects a dotted TLD so emails in pasted mail don't count as UPI.
+  [/\bupi\b|\bupi\s*ref|\bvpa\b|\b[a-z0-9._-]+@[a-z][a-z0-9]{1,10}\b(?!\s*\.)/i, 'upi'],
+];
+
+/** Detect the payment rail from alert keywords; 'unknown' when none match. */
+export function extractInstrument(body: string): ParsedInstrument {
+  for (const [pattern, instrument] of INSTRUMENT_PATTERNS) {
+    if (pattern.test(body)) {
+      return instrument;
+    }
+  }
+  return 'unknown';
 }
 
 /* ------------------------------------------------------------------ */
@@ -309,19 +411,24 @@ export function parseBankMessage(body: string): ParsedTransactionMessage | null 
   if (isNonTransaction(body)) {
     return null;
   }
-  const amountMinor = extractAmountMinor(body);
-  const direction = extractDirection(body);
-  if (amountMinor == null || direction == null) {
+  const direction = findDirection(body);
+  if (!direction) {
+    return null;
+  }
+  const amount = extractAmount(body, direction.index);
+  if (!amount) {
     return null;
   }
   const merchant = extractMerchant(body);
   return {
-    direction,
-    amountMinor,
+    direction: direction.direction,
+    amountMinor: amount.amountMinor,
+    confidence: amount.confidence,
+    instrument: extractInstrument(body),
     merchant,
     accountHint: extractAccountHint(body),
     referenceId: extractReferenceId(body),
     occurredAt: extractOccurredAt(body),
-    categoryId: guessCategoryId(direction, merchant, body),
+    categoryId: guessCategoryId(direction.direction, merchant, body),
   };
 }

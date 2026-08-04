@@ -2,7 +2,7 @@
 
 ## Project
 
-PaisaFlow: offline-first, Android-first expense tracker. React Native Community CLI 0.86.2 + TypeScript (strict). No Expo, no Firebase, no remote DB.
+PaisaFlow: offline-first, Android-first expense tracker. React Native Community CLI 0.86.2 + TypeScript (strict). No Expo, no Firebase; remote DB optional (Supabase cloud sync — app fully functional without it).
 
 ## Conventions
 
@@ -32,3 +32,10 @@ PaisaFlow: offline-first, Android-first expense tracker. React Native Community 
 ## Structure
 
 See `PLAN.md` (phases, risks) and `ARCHITECTURE.md`. Feature code lives in `src/features/<name>/{screens,components,hooks,services,schemas,types,__tests__}`.
+
+Features: `accounts`, `ai-summary`, `budgets`, `categories`, `cloud`, `home`, `insights`, `investments`, `notifications`, `onboarding`, `people`, `recurring`, `salary`, `savings`, `security`, `settings`, `tracking`, `transactions`.
+
+Services (`src/services/`): `connectivity`, `export`, `notifications`, `openrouter`, `security`, `sms`, `supabase`.
+
+- Phase docs: `PHASE8.md` (recurring, app lock, cloud sync, SMS tracking), `PHASE9.md` (money hub: people/lending, salary, investments, savings, smart reminders, balances).
+- `src/config/supabase.ts` is **gitignored** — it carries the developer's bundled Supabase credentials. Never commit it; the committed `src/config/supabase.example.ts` (empty strings) is the fallback.

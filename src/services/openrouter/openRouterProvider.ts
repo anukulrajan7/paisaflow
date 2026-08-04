@@ -24,6 +24,35 @@ function errorFromStatus(status: number): ProviderError {
   return new ProviderError(kindByStatus[status] ?? 'unknown');
 }
 
+const MAX_DETAILS_LENGTH = 300;
+
+/**
+ * Pull the provider's own error message out of an error response body so the
+ * user can see the precise reason ("model not found" vs "bad key" vs "no
+ * credits"). OpenRouter error bodies never contain the request API key.
+ */
+async function extractErrorDetails(response: Response): Promise<string | undefined> {
+  let body: string;
+  try {
+    body = await response.text();
+  } catch {
+    return undefined;
+  }
+  try {
+    const parsed: unknown = JSON.parse(body);
+    if (typeof parsed === 'object' && parsed !== null) {
+      const message = (parsed as {error?: {message?: unknown}}).error?.message;
+      if (typeof message === 'string' && message.trim().length > 0) {
+        return message.trim().slice(0, MAX_DETAILS_LENGTH);
+      }
+    }
+  } catch {
+    // Not JSON — fall through to the raw body.
+  }
+  const trimmed = body.trim();
+  return trimmed.length > 0 ? trimmed.slice(0, MAX_DETAILS_LENGTH) : undefined;
+}
+
 /** Pull the assistant text out of a chat-completion response. */
 function extractContent(data: unknown): string | null {
   if (typeof data !== 'object' || data === null) {
@@ -88,7 +117,9 @@ export function createOpenRouterProvider(): SummaryProvider {
         });
 
         if (!response.ok) {
-          throw errorFromStatus(response.status);
+          const base = errorFromStatus(response.status);
+          const details = await extractErrorDetails(response);
+          throw new ProviderError(base.kind, base.message, details);
         }
 
         const data: unknown = await response.json();

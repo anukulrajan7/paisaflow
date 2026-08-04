@@ -11,7 +11,8 @@ import {ACCOUNT_TYPE_META} from './accountTypeMeta';
 export interface AccountRowProps {
   item: AccountListItem;
   currency: string;
-  onPress: () => void;
+  /** Omit for read-only rows (e.g. virtual linked accounts). */
+  onPress?: () => void;
   testID?: string;
 }
 
@@ -37,7 +38,7 @@ export function AccountRow({item, currency, onPress, testID}: AccountRowProps) {
       accessibilityLabel={`${account.name}, ${meta.label}, balance ${formatMoney(
         balanceMinor,
         currency,
-      )}${flags ? `, ${flags}` : ''}. Activate for actions.`}
+      )}${flags ? `, ${flags}` : ''}${onPress ? '. Activate for actions.' : ''}`}
       style={styles.card}>
       <View style={styles.row}>
         <View
