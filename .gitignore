@@ -33,6 +33,8 @@ local.properties
 .cxx/
 *.keystore
 !debug.keystore
+# Release signing properties (contains keystore passwords)
+keystore.properties
 .kotlin/
 
 # node.js

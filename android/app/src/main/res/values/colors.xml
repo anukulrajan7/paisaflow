@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Warm neutral launch background, matches `background` (light) in
+         src/design-system/tokens/colors.ts — avoids a white/dark flash
+         before React Native mounts. -->
+    <color name="splash_background">#F7F3ED</color>
+</resources>

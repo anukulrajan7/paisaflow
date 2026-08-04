@@ -1,97 +1,243 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# PaisaFlow
 
-# Getting Started
+Offline-first, Android-first expense tracker. All financial data lives in an
+on-device SQLite database; the app is fully functional without a network
+connection. AI spending summaries (via OpenRouter) are an optional add-on
+that never blocks core tracking.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+- React Native Community CLI **0.86.2** (New Architecture, Hermes) + TypeScript (strict)
+- No Expo, no Firebase, no remote database
+- Money is stored as integer minor units — never floats
 
-## Step 1: Start Metro
+## Features
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+- Accounts (cash/bank/etc.) with opening balances, archive support
+- Income / expense / transfer transactions with categories, tags, merchant,
+  notes, payment method; soft delete with undo and restore
+- Transaction list with search, filters, and pagination
+- Dashboard: monthly totals, category breakdown, budget usage
+- Budgets: overall + per-category, monthly cycle with configurable start day
+- Insights: daily/weekly/monthly trends and category distribution (SVG charts)
+- Daily reminder notifications (morning + evening, local only)
+- Optional AI monthly summary via OpenRouter (your own API key, stored in the
+  device keystore)
+- CSV export of transactions
+- Light/dark theme (system-aware), custom design system
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+## Architecture
 
-```sh
-# Using npm
-npm start
+Layered, feature-oriented — see [ARCHITECTURE.md](ARCHITECTURE.md) for the
+full write-up and [DATABASE.md](DATABASE.md) for the schema.
 
-# OR using Yarn
-yarn start
+```
+Screen → feature hook/service → repository interface → SQLite repository → db
 ```
 
-## Step 2: Build and run your app
+- **SQLite (`react-native-nitro-sqlite`) is the single source of truth** for
+  persistent data. Zustand holds only UI/session state (theme, bootstrap,
+  edit-draft, and a `dataVersion` counter used to invalidate query hooks
+  after writes).
+- **Design system first**: screens compose shared components and semantic
+  tokens from `src/design-system/` — no hardcoded colors in screens.
+- **AI is optional**: aggregates are computed locally with SQL; only a minimal
+  aggregate JSON is sent, responses are Zod-validated, and any failure falls
+  back to a deterministic local summary. See [AI_SUMMARY.md](AI_SUMMARY.md).
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+## Folder structure
 
-### Android
-
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
+```
+src/
+  app/            # App root, bootstrap, navigation, providers
+  database/       # connection, migrations, repositories, queries, seeds, types
+  design-system/  # tokens (light+dark), theme provider, shared components, icons
+  features/       # accounts, ai-summary, budgets, categories, home, insights,
+                  # onboarding, settings, transactions
+  services/       # connectivity, export (CSV), notifications, openrouter, security
+  store/          # zustand UI/session stores
+  utils/          # date, id, money helpers
+android/          # native Android project (signing, icons, manifest)
+ios/              # iOS project (not actively maintained — Android-first)
+scripts/          # launcher icon PNG generator (pure Python stdlib)
 ```
 
-### iOS
+Feature code lives in `src/features/<name>/{screens,components,hooks,services,schemas,types,__tests__}`.
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+## Prerequisites
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+- **Node >= 22.11** (developed on Node 24)
+- **JDK 17** (e.g. `brew install openjdk@17`)
+- **Android SDK** with Platform 36, build-tools 36.0.0, NDK 27.1.12297006
+  (installed via Android Studio SDK Manager)
+- An Android emulator or device (minSdk 24 / Android 7.0+)
 
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+## Installation & Android environment
 
 ```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
+npm install
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+Make sure `ANDROID_HOME` points at your SDK and platform-tools are on PATH
+(standard React Native CLI setup:
+https://reactnative.dev/docs/set-up-your-environment). Create
+`android/local.properties` with `sdk.dir=/path/to/sdk` if Gradle can't find
+the SDK.
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+## Running
 
-## Step 3: Modify your app
+```sh
+npm start           # Metro bundler (terminal 1)
+npm run android     # build + install + launch debug app (terminal 2)
+```
 
-Now that you have successfully run the app, let's make changes!
+## Database & migrations
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+- The SQLite database (`paisaflow.db`) is opened once at bootstrap; foreign
+  keys are enforced (`PRAGMA foreign_keys = ON`).
+- Migrations live in `src/database/migrations/` and are **append-only** —
+  never edit an applied migration; add `00N_name.ts` with the next integer
+  version and register it in `src/database/migrations/index.ts`.
+- The runner (`migrationRunner.ts`) applies pending migrations in ascending
+  order, each inside its own transaction together with its `schema_migrations`
+  row, so a failed migration rolls back cleanly and retries on next launch.
+- Seeds: default accounts/categories ship with every install
+  (`seeds/defaultData.ts`); sample transactions are seeded only in `__DEV__`
+  builds (`seeds/devData.ts`). Release builds start with zero transactions.
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+## AI summaries (OpenRouter, optional)
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+- Configure in-app: **Settings → AI settings** — paste your OpenRouter API
+  key and optionally choose a model (default
+  `meta-llama/llama-3.1-8b-instruct`).
+- The key is stored **only** in the device keystore via
+  `react-native-keychain` (Android Keystore) — never in the database,
+  AsyncStorage, or logs.
+- **Client-side key warning**: the key lives on your device and calls go
+  directly from the app to OpenRouter. Treat the key as a personal secret;
+  use a key with a low credit limit. A future backend proxy can replace the
+  provider behind the existing `SummaryProvider` interface.
+- Only pre-computed aggregates (totals, category shares, largest transaction
+  amounts, truncated merchant strings) are sent — never notes or full
+  transaction lists. AI never calculates totals; it narrates local numbers.
+  Details in [AI_SUMMARY.md](AI_SUMMARY.md).
+- Requires `android.permission.INTERNET` (declared in the manifest). Without
+  a key or connectivity the app shows the deterministic local summary / a
+  graceful offline state.
 
-## Congratulations! :tada:
+## Notifications
 
-You've successfully run and modified your React Native App. :partying_face:
+- Daily reminders via `@notifee/react-native`, scheduled as local repeating
+  `TimestampTrigger`s — no server involved.
+- Channel `reminders` (created before scheduling), stable notification ids
+  (`paisaflow-morning` / `paisaflow-evening`), cancelled and rescheduled on
+  every settings sync (time change, timezone change).
+- Defaults: morning 08:30, evening 20:30; configurable in onboarding and
+  Settings.
+- Android 13+: `POST_NOTIFICATIONS` is declared in the manifest and requested
+  at runtime; when denied, reminders stay unscheduled and the rest of the app
+  is unaffected.
 
-### Now what?
+## Tests & checks
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+```sh
+npm test            # jest — 24 suites, 169 tests
+npm run typecheck   # tsc --noEmit
+npm run lint        # eslint
+```
 
-# Troubleshooting
+## Building APKs / AAB
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+### Debug APK
 
-# Learn More
+```sh
+npm run android:debug-apk
+# → android/app/build/outputs/apk/debug/app-debug.apk
+```
 
-To learn more about React Native, take a look at the following resources:
+### Signed release APK
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+Release builds are signed with the identity described in
+`android/keystore.properties` (gitignored). If the file is missing, the
+release build fails with a message pointing here.
+
+A **local development signing identity** is already configured in this
+workspace (`android/app/paisaflow-upload.keystore`, alias `paisaflow`,
+password `paisaflow-upload-2026`). It is fine for sideloading and testing.
+
+**For real Play Store publishing, generate your own keystore** (and keep it
+backed up — losing it means losing the ability to update your app):
+
+```sh
+keytool -genkeypair -v \
+  -keystore android/app/paisaflow-upload.keystore \
+  -alias paisaflow -keyalg RSA -keysize 2048 -validity 10950 \
+  -storepass <your-store-password> -keypass <your-key-password> \
+  -dname "CN=Your Name, OU=Mobile, O=Your Org, L=City, ST=State, C=IN"
+```
+
+Then write `android/keystore.properties` (`storeFile` is resolved relative to
+`android/app/`):
+
+```properties
+storeFile=paisaflow-upload.keystore
+storePassword=<your-store-password>
+keyAlias=paisaflow
+keyPassword=<your-key-password>
+```
+
+Both `*.keystore` and `keystore.properties` are gitignored. Build:
+
+```sh
+npm run android:release-apk
+# → android/app/build/outputs/apk/release/app-release.apk
+```
+
+### Play Store AAB
+
+```sh
+npm run android:release-bundle
+# → android/app/build/outputs/bundle/release/app-release.aab
+```
+
+### R8/ProGuard
+
+`enableProguardInReleaseBuilds` is **disabled** in `android/app/build.gradle`
+— aggressive shrinking is untested with the nitro-sqlite/notifee native
+modules. Enable only after a full QA pass on a minified build.
+
+## Troubleshooting
+
+- **Stale native build**: `npm run android:clean` then rebuild.
+- **Metro serving stale bundles**: `npm start -- --reset-cache`.
+- **Watchman weirdness**: `watchman watch-del-all` and restart Metro.
+- **Gradle daemon stuck**: `cd android && ./gradlew --stop`.
+- **nitro-modules peer note**: `react-native-nitro-sqlite` requires
+  `react-native-nitro-modules` as a peer — it is pinned in `package.json`;
+  if you upgrade the SQLite library, upgrade nitro-modules to the matching
+  version or autolinking/JNI registration breaks at runtime.
+- **Release build fails with "Missing android/keystore.properties"**: see
+  "Signed release APK" above.
+
+## Security notes
+
+- Money is integer minor units (`amount_minor`) end to end; formatting happens
+  only at the UI edge (`src/utils/money.ts`). No floats for money.
+- Every user-controlled value goes through **bound SQL parameters** — no
+  string concatenation into SQL.
+- Transactions are **soft-deleted** (`deleted_at`); normal queries exclude
+  them, so accidental deletes are recoverable.
+- Transfers are excluded from all income/expense totals.
+- The OpenRouter key exists only in the device keystore; API keys, transaction
+  notes, and financial payloads are never logged.
+- `android:allowBackup="false"` — financial data is not uploaded to cloud
+  backups.
+
+## Known MVP limitations
+
+- Transactions carry a per-row currency but the app assumes a single default
+  currency (INR) for totals — no multi-currency aggregation.
+- Recurring transactions are not implemented (placeholder only).
+- No cloud sync / backup-restore; data lives only on the device (CSV export
+  is the escape hatch).
+- AI summaries require the user's own OpenRouter key and connectivity; there
+  is no bundled key or proxy.
+- iOS project exists from the template but is not actively maintained.

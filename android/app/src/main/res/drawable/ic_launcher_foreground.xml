@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  PaisaFlow launcher foreground: a minimal "flow" mark — three rounded bars
+  of descending length, suggesting money flowing downward/being tracked.
+  Drawn inside the 72dp safe zone of the 108dp adaptive-icon canvas.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M38,42 L70,42"
+        android:strokeColor="#FDF8F3"
+        android:strokeWidth="7"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M38,54 L62,54"
+        android:strokeColor="#FDF8F3"
+        android:strokeWidth="7"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M38,66 L54,66"
+        android:strokeColor="#FDF8F3"
+        android:strokeWidth="7"
+        android:strokeLineCap="round" />
+</vector>
