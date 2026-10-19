@@ -8,6 +8,7 @@ import type {
 import {ChartPie, House, Plus, Receipt, Settings} from 'lucide-react-native';
 
 import {useIsWideLayout} from '../../design-system/layout';
+import {isWeb} from '../../platform';
 import {useTheme} from '../../design-system/theme';
 import type {AppTheme} from '../../design-system/tokens';
 import {
@@ -98,9 +99,12 @@ export function RootTabs() {
           backgroundColor: theme.colors.surface,
           borderTopColor: theme.colors.border,
         },
+        // Browser font metrics run wider than Android's: a slightly smaller,
+        // tighter label keeps "Transactions" on one line in a 390px bar.
         tabBarLabelStyle: {
-          fontSize: theme.typography.label.fontSize,
+          fontSize: isWeb ? 10.5 : theme.typography.label.fontSize,
           fontWeight: theme.typography.label.fontWeight,
+          letterSpacing: isWeb ? -0.2 : undefined,
         },
       }}>
       <Tab.Screen

@@ -28,6 +28,12 @@ PaisaFlow: offline-first, Android-first expense tracker. React Native Community 
 - `npm run android:release-apk` — release APK (needs signing config, see README)
 - `npm run android:release-bundle` — Play Store AAB
 - `npm run android:clean` — gradle clean
+- `npm run web:dev` / `web:build` / `web:preview` — web target (Vite + react-native-web; output `dist/web`)
+- `npm run typecheck:web` — typecheck the `*.web.ts(x)` shims with DOM types
+
+## Web target
+
+Same codebase, built with Vite (`vite.config.mts`, root `web/`). Landing page at `/` (static `web/index.html`), app at `/app/` (`web/app/main.tsx`). Platform code lives in `*.web.ts(x)` siblings that shadow native modules (Metro convention): sql.js + IndexedDB for the database (`connection.web.ts`), AES-GCM/IndexedDB for secrets, Notification API for reminders, Blob download for CSV. `src/platform` exposes capability flags (`isWeb`, `supportsSmsInbox`, `supportsCloudSync`, …) that screens use to hide or re-word native-only entry points. Cloud sync and the bundled Supabase config are never included in the web bundle (`src/config/index.web.ts`). Container: `Dockerfile.web` + `docker-compose.web.yml` (nginx, port 127.0.0.1:18110).
 
 ## Structure
 
@@ -35,7 +41,7 @@ See `PLAN.md` (phases, risks) and `ARCHITECTURE.md`. Feature code lives in `src/
 
 Features: `accounts`, `ai-summary`, `budgets`, `categories`, `cloud`, `home`, `insights`, `investments`, `notifications`, `onboarding`, `people`, `recurring`, `salary`, `savings`, `security`, `settings`, `tracking`, `transactions`.
 
-Services (`src/services/`): `connectivity`, `export`, `notifications`, `openrouter`, `security`, `sms`, `supabase`.
+Services (`src/services/`): `connectivity`, `export`, `notifications`, `openrouter`, `security`, `sms`, `supabase`. Platform flags: `src/platform`.
 
 - Phase docs: `PHASE8.md` (recurring, app lock, cloud sync, SMS tracking), `PHASE9.md` (money hub: people/lending, salary, investments, savings, smart reminders, balances).
 - `src/config/supabase.ts` is **gitignored** — it carries the developer's bundled Supabase credentials. Never commit it; the committed `src/config/supabase.example.ts` (empty strings) is the fallback.

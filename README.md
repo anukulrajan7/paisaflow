@@ -81,6 +81,29 @@ scripts/          # launcher icon PNG generator (pure Python stdlib)
 
 Feature code lives in `src/features/<name>/{screens,components,hooks,services,schemas,types,__tests__}`.
 
+## Web version
+
+The same codebase also builds for the browser with
+[react-native-web](https://necolas.github.io/react-native-web/) and Vite —
+landing page at `/`, app at `/app/`. On the web the SQLite database runs as
+WebAssembly (sql.js) and is persisted to IndexedDB; secrets are AES-GCM
+encrypted in IndexedDB (weaker than the Android Keystore — the UI says so).
+Not available on the web: SMS auto-tracking (paste alerts instead), cloud
+sync, background reminders (they fire only while a tab is open).
+
+```sh
+npm run web:dev        # http://localhost:5180 (landing) and /app/
+npm run web:build      # -> dist/web
+npm run web:preview    # serve the production build locally
+npm run typecheck:web  # typecheck the *.web.ts(x) shims
+
+docker compose -f docker-compose.web.yml up -d --build   # nginx on 127.0.0.1:18110
+```
+
+Platform-specific code lives in `*.web.ts(x)` siblings (e.g.
+`src/database/connection/connection.web.ts`); `src/platform` exposes the
+capability flags screens use to hide native-only entry points.
+
 ## Prerequisites
 
 - **Node >= 22.11** (developed on Node 24)

@@ -648,7 +648,7 @@ export function ExpenseReviewScreen({navigation}: Props) {
         subtitle={
           supportsSmsInbox
             ? 'Approve to add as transactions'
-            : 'Pasted alerts — approve to add as transactions'
+            : 'Paste, review, approve'
         }
         left={backButton}
         right={
