@@ -545,6 +545,7 @@ main > section {
 }
 .shot img {
   width: min(100%, 320px);
+  aspect-ratio: 390 / 844;
   border-radius: 26px;
   border: 3px solid #2a241c;
   box-shadow: var(--shadow);

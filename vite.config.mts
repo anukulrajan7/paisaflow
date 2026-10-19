@@ -111,23 +111,15 @@ export default defineConfig(({mode}) => {
           app: path.resolve(ROOT, 'web/app/index.html'),
         },
         output: {
+          // Cache-friendly split: the SQLite engine and third-party code
+          // change rarely, so they live in their own hashed chunks and stay
+          // cached across app deploys.
           manualChunks(id) {
             if (id.includes('node_modules/sql.js')) {
               return 'sqljs';
             }
-            if (
-              id.includes('node_modules/react-native-web') ||
-              id.includes('node_modules/react-dom') ||
-              id.includes('node_modules/react/') ||
-              id.includes('node_modules/scheduler')
-            ) {
-              return 'react';
-            }
-            if (id.includes('node_modules/@react-navigation')) {
-              return 'navigation';
-            }
-            if (id.includes('node_modules/lucide-react-native')) {
-              return 'icons';
+            if (id.includes('node_modules/')) {
+              return 'vendor';
             }
             return undefined;
           },
