@@ -1,11 +1,12 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {ScrollView, StyleSheet, Switch, View} from 'react-native';
+import {ScrollView, StyleSheet, View} from 'react-native';
 import type {BottomTabNavigationProp} from '@react-navigation/bottom-tabs';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {
   BadgeIndianRupee,
   Bell,
   BellRing,
+  ClipboardPaste,
   Cloud,
   Database,
   Eraser,
@@ -35,6 +36,7 @@ import {
   SelectField,
   Text,
   useToast,
+  Switch,
 } from '../../../design-system/components';
 import {useTheme} from '../../../design-system/theme';
 import type {AppTheme} from '../../../design-system/tokens';
@@ -57,6 +59,12 @@ import {
 } from '../../../services/notifications';
 import {exportTransactionsCsv} from '../../../services/export';
 import {dayjs} from '../../../utils/date';
+import {
+  isWeb,
+  supportsBackgroundReminders,
+  supportsCloudSync,
+  supportsSmsInbox,
+} from '../../../platform';
 import {SettingsRow} from '../components/SettingsRow';
 import {wipeAllLocalData} from '../services/wipeLocalData';
 
@@ -367,6 +375,12 @@ export function SettingsScreen({navigation}: Props) {
 
         <SectionHeader title="Reminders" style={styles.sectionGap} />
         <Card style={styles.card}>
+          {!supportsBackgroundReminders ? (
+            <Text variant="caption" color="textSecondary">
+              On the web, reminders can only appear while PaisaFlow stays open
+              in a tab. For reminders that wake your phone, use the Android app.
+            </Text>
+          ) : null}
           <SettingsRow
             icon={Bell}
             title="Morning reminder"
@@ -425,16 +439,29 @@ export function SettingsScreen({navigation}: Props) {
 
         <SectionHeader title="Auto-tracking" style={styles.sectionGap} />
         <Card style={styles.card}>
-          <SettingsRow
-            icon={ScanText}
-            title="SMS expense detection"
-            subtitle="Review transactions detected from bank alerts — parsed on-device"
-            onPress={() =>
-              navigation
-                .getParent<BottomTabNavigationProp<RootTabParamList>>()
-                ?.navigate('TransactionsTab', {screen: 'TrackingSettings'})
-            }
-          />
+          {supportsSmsInbox ? (
+            <SettingsRow
+              icon={ScanText}
+              title="SMS expense detection"
+              subtitle="Review transactions detected from bank alerts — parsed on-device"
+              onPress={() =>
+                navigation
+                  .getParent<BottomTabNavigationProp<RootTabParamList>>()
+                  ?.navigate('TransactionsTab', {screen: 'TrackingSettings'})
+              }
+            />
+          ) : (
+            <SettingsRow
+              icon={ClipboardPaste}
+              title="Paste bank alerts"
+              subtitle="SMS scanning needs the Android app. On the web, paste a bank SMS or email alert — it is parsed in this browser"
+              onPress={() =>
+                navigation
+                  .getParent<BottomTabNavigationProp<RootTabParamList>>()
+                  ?.navigate('TransactionsTab', {screen: 'ExpenseReview'})
+              }
+            />
+          )}
         </Card>
 
         <SectionHeader title="Money hub" style={styles.sectionGap} />
@@ -488,7 +515,11 @@ export function SettingsScreen({navigation}: Props) {
           <SettingsRow
             icon={Cloud}
             title="Cloud sync (optional)"
-            subtitle="Back up and sync with your own Supabase project"
+            subtitle={
+              supportsCloudSync
+                ? 'Back up and sync with your own Supabase project'
+                : 'Available in the Android app'
+            }
             onPress={() => navigation.navigate('CloudSync')}
           />
         </Card>
@@ -514,7 +545,11 @@ export function SettingsScreen({navigation}: Props) {
           <SettingsRow
             icon={FileDown}
             title="Export transactions (CSV)"
-            subtitle="Share all transactions as a spreadsheet-friendly file"
+            subtitle={
+              isWeb
+                ? 'Download all transactions as a spreadsheet-friendly file'
+                : 'Share all transactions as a spreadsheet-friendly file'
+            }
             onPress={() => handleExport()}
             disabled={exporting}
             accessibilityLabel={exporting ? 'Exporting transactions' : 'Export transactions as CSV'}
@@ -522,7 +557,11 @@ export function SettingsScreen({navigation}: Props) {
           <SettingsRow
             icon={Trash2}
             title="Delete all data"
-            subtitle="Wipe every transaction, account and setting on this device"
+            subtitle={
+              isWeb
+                ? 'Wipe every transaction, account and setting stored in this browser'
+                : 'Wipe every transaction, account and setting on this device'
+            }
             danger
             onPress={() => {
               setDeleteConfirmText('');

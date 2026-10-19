@@ -12,6 +12,7 @@ import {X} from 'lucide-react-native';
 
 import {useTheme} from '../theme';
 import type {AppTheme} from '../tokens';
+import {SHEET_MAX_WIDTH, useIsWideLayout} from '../layout';
 import {Text} from './Text';
 import {IconButton} from './IconButton';
 
@@ -42,6 +43,7 @@ export function BottomSheet({
   const {theme} = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
+  const wide = useIsWideLayout();
 
   return (
     <RNModal
@@ -67,6 +69,13 @@ export function BottomSheet({
               paddingBottom: insets.bottom + theme.spacing.lg,
               maxHeight: `${maxHeightFraction * 100}%`,
             },
+            wide && [
+              styles.wideSheet,
+              {
+                borderRadius: theme.radius.xl,
+                marginBottom: theme.spacing.xxl,
+              },
+            ],
             contentStyle,
           ]}>
           <View style={styles.handle} />
@@ -95,6 +104,11 @@ export function BottomSheet({
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     root: {flex: 1, justifyContent: 'flex-end'},
+    wideSheet: {
+      width: '100%',
+      maxWidth: SHEET_MAX_WIDTH,
+      alignSelf: 'center',
+    },
     backdrop: {
       position: 'absolute',
       top: 0,

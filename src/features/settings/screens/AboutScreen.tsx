@@ -15,6 +15,7 @@ import {useTheme} from '../../../design-system/theme';
 import type {AppTheme} from '../../../design-system/tokens';
 import type {SettingsStackParamList} from '../../../app/navigation/types';
 import {SettingsRow} from '../components/SettingsRow';
+import {hasHardwareBackedSecrets, isWeb} from '../../../platform';
 
 type Props = NativeStackScreenProps<SettingsStackParamList, 'About'>;
 
@@ -54,6 +55,7 @@ export function AboutScreen({navigation}: Props) {
           </Text>
           <Text variant="caption" color="textMuted" align="center">
             Version {APP_VERSION}
+            {isWeb ? ' · Web' : ''}
           </Text>
         </View>
 
@@ -61,8 +63,14 @@ export function AboutScreen({navigation}: Props) {
         <Card style={styles.card}>
           <SettingsRow
             icon={ShieldCheck}
-            title="Your data stays on this device"
-            subtitle="Transactions, accounts and budgets live only in the local database. There is no account, no cloud sync and no analytics."
+            title={
+              isWeb ? 'Your data stays in this browser' : 'Your data stays on this device'
+            }
+            subtitle={
+              isWeb
+                ? 'Transactions, accounts and budgets live in a local SQLite database stored by this browser. There is no account, no server and no analytics.'
+                : 'Transactions, accounts and budgets live only in the local database. There is no account, no cloud sync and no analytics.'
+            }
           />
           <Text variant="body" color="textSecondary">
             Your data never leaves this device — the one exception is optional
@@ -77,7 +85,11 @@ export function AboutScreen({navigation}: Props) {
           <SettingsRow
             icon={Sparkles}
             title="Powered by OpenRouter"
-            subtitle="AI insights are optional and need your own OpenRouter API key, stored in the device Keychain — never in the database."
+            subtitle={
+              hasHardwareBackedSecrets
+                ? 'AI insights are optional and need your own OpenRouter API key, stored in the device Keychain — never in the database.'
+                : 'AI insights are optional and need your own OpenRouter API key, stored encrypted in this browser — never in the database.'
+            }
           />
           <SettingsRow
             icon={ExternalLink}

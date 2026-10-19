@@ -1,9 +1,13 @@
 import React, {useMemo} from 'react';
 import {Pressable, StyleSheet, View} from 'react-native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import type {BottomTabBarButtonProps} from '@react-navigation/bottom-tabs';
+import type {
+  BottomTabBarButtonProps,
+  BottomTabBarProps,
+} from '@react-navigation/bottom-tabs';
 import {ChartPie, House, Plus, Receipt, Settings} from 'lucide-react-native';
 
+import {useIsWideLayout} from '../../design-system/layout';
 import {useTheme} from '../../design-system/theme';
 import type {AppTheme} from '../../design-system/tokens';
 import {
@@ -14,6 +18,7 @@ import {
   TransactionsStackNavigator,
 } from './stacks';
 import type {RootTabParamList} from './types';
+import {WebSidebar} from './WebSidebar';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
@@ -36,10 +41,14 @@ const renderChartPieIcon = ({color, focused}: TabIconProps) => (
 const renderSettingsIcon = ({color, focused}: TabIconProps) => (
   <Settings size={TAB_ICON_SIZE} color={color} strokeWidth={focused ? 2.4 : 2} />
 );
+const renderPlusIcon = ({color, focused}: TabIconProps) => (
+  <Plus size={TAB_ICON_SIZE} color={color} strokeWidth={focused ? 2.4 : 2} />
+);
 const renderEmptyLabel = () => null;
 const renderAddButton = (props: BottomTabBarButtonProps) => (
   <AddTabButton {...props} />
 );
+const renderSidebar = (props: BottomTabBarProps) => <WebSidebar {...props} />;
 
 /**
  * Prominent center "Add" button: elevated primary circle, kept inside the
@@ -68,13 +77,21 @@ function AddTabButton({onPress, accessibilityState}: BottomTabBarButtonProps) {
   );
 }
 
+/**
+ * Tab shell. On phones: bottom bar with a raised center "Add" button. On
+ * wide web layouts: the same routes rendered as a left sidebar (WebSidebar),
+ * so desktop users get a proper two-column app instead of a stretched phone.
+ */
 export function RootTabs() {
   const {theme} = useTheme();
+  const wide = useIsWideLayout();
 
   return (
     <Tab.Navigator
+      tabBar={wide ? renderSidebar : undefined}
       screenOptions={{
         headerShown: false,
+        tabBarPosition: wide ? 'left' : 'bottom',
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.textMuted,
         tabBarStyle: {
@@ -105,11 +122,15 @@ export function RootTabs() {
       <Tab.Screen
         name="AddTab"
         component={AddStackNavigator}
-        options={{
-          title: 'Add',
-          tabBarLabel: renderEmptyLabel,
-          tabBarButton: renderAddButton,
-        }}
+        options={
+          wide
+            ? {title: 'Add', tabBarIcon: renderPlusIcon}
+            : {
+                title: 'Add',
+                tabBarLabel: renderEmptyLabel,
+                tabBarButton: renderAddButton,
+              }
+        }
       />
       <Tab.Screen
         name="InsightsTab"

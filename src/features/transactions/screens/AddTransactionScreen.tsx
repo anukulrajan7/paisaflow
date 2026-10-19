@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {ScrollView, StyleSheet, Switch, View} from 'react-native';
+import {ScrollView, StyleSheet, View} from 'react-native';
 import {useFocusEffect} from '@react-navigation/native';
 import type {BottomTabNavigationProp} from '@react-navigation/bottom-tabs';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
@@ -20,6 +20,7 @@ import {
   SelectField,
   Text,
   useToast,
+  Switch,
 } from '../../../design-system/components';
 import {getCategoryIcon} from '../../../design-system/icons';
 import {useTheme} from '../../../design-system/theme';

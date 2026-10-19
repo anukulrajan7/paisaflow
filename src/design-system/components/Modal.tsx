@@ -4,6 +4,7 @@ import type {StyleProp, ViewStyle} from 'react-native';
 
 import {useTheme} from '../theme';
 import type {AppTheme} from '../tokens';
+import {SHEET_MAX_WIDTH} from '../layout';
 import {Text} from './Text';
 
 export interface ModalProps {
@@ -70,6 +71,9 @@ const createStyles = (theme: AppTheme) =>
     },
     card: {
       alignSelf: 'stretch',
+      width: '100%',
+      maxWidth: SHEET_MAX_WIDTH,
+      marginHorizontal: 'auto',
       backgroundColor: theme.colors.surfaceElevated,
       padding: theme.spacing.xl,
       gap: theme.spacing.md,

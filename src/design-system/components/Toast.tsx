@@ -15,6 +15,7 @@ import type {LucideIcon} from 'lucide-react-native';
 
 import {useTheme} from '../theme';
 import type {AppTheme, ColorTokens} from '../tokens';
+import {isWeb} from '../../platform';
 import {Text} from './Text';
 
 export type ToastType = 'success' | 'error' | 'info';
@@ -68,7 +69,7 @@ export function ToastProvider({children}: {children: ReactNode}) {
     Animated.timing(translateY, {
       toValue: -100,
       duration: 180,
-      useNativeDriver: true,
+      useNativeDriver: !isWeb,
     }).start(() => setToast(null));
   }, [translateY]);
 
@@ -88,7 +89,7 @@ export function ToastProvider({children}: {children: ReactNode}) {
       Animated.timing(translateY, {
         toValue: 0,
         duration: 200,
-        useNativeDriver: true,
+        useNativeDriver: !isWeb,
       }).start();
       timerRef.current = setTimeout(dismiss, next.duration);
     },

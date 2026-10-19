@@ -19,7 +19,11 @@ import {
 } from '../../../design-system/illustrations';
 import {useTheme} from '../../../design-system/theme';
 import type {AppTheme} from '../../../design-system/tokens';
+import {getDb} from '../../../database/connection';
 import {getSettingsRepository} from '../../../database/repositories';
+import {seedDemoData} from '../../../database/seeds';
+import {bumpDataVersion} from '../../../store/dataVersionStore';
+import {isWeb, supportsBackgroundReminders} from '../../../platform';
 import {
   requestNotificationPermission,
   syncRemindersFromSettings,
@@ -30,6 +34,8 @@ import type {RootStackParamList} from '../../../app/navigation/types';
 import type {ThemePreference} from '../../../store/themeStore';
 import {StepProgress} from '../components/StepProgress';
 import {ReminderRow} from '../components/ReminderRow';
+import {StartModeChoice} from '../components/StartModeChoice';
+import type {StartMode} from '../components/StartModeChoice';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Onboarding'>;
 
@@ -89,6 +95,9 @@ export function OnboardingScreen(_props: Props) {
 
   const [step, setStep] = useState(0);
 
+  // Step 1 (web only) — explore with sample data or start empty.
+  const [startMode, setStartMode] = useState<StartMode>('fresh');
+
   // Step 2 — preferences
   const [currency, setCurrency] = useState('INR');
   const [cycleDay, setCycleDay] = useState(1);
@@ -145,6 +154,14 @@ export function OnboardingScreen(_props: Props) {
     } catch {
       // Reminders can be rescheduled later from Settings — don't block onboarding.
     }
+    if (isWeb && startMode === 'sample') {
+      try {
+        await seedDemoData(getDb());
+        bumpDataVersion();
+      } catch {
+        // Sample data is a convenience; the app is fine without it.
+      }
+    }
     try {
       await markOnboardingComplete();
     } catch {
@@ -182,10 +199,14 @@ export function OnboardingScreen(_props: Props) {
                 variant="body"
                 color="textSecondary"
                 style={styles.privacyText}>
-                All your data stays on this device. No account, no cloud, no
-                tracking — your finances are yours alone.
+                {isWeb
+                  ? 'All your data stays in this browser. No account, no server, no tracking \u2014 your finances are yours alone.'
+                  : 'All your data stays on this device. No account, no cloud, no tracking \u2014 your finances are yours alone.'}
               </Text>
             </Card>
+            {isWeb ? (
+              <StartModeChoice value={startMode} onChange={setStartMode} />
+            ) : null}
           </View>
         ) : null}
 
@@ -260,9 +281,9 @@ export function OnboardingScreen(_props: Props) {
                 </Text>
               </View>
               <Text variant="body" color="textSecondary">
-                PaisaFlow only uses notifications for these reminders. Nothing
-                is sent to a server — Android just needs your permission to
-                show them.
+                {supportsBackgroundReminders
+                  ? 'PaisaFlow only uses notifications for these reminders. Nothing is sent to a server \u2014 Android just needs your permission to show them.'
+                  : 'PaisaFlow only uses notifications for these reminders. Nothing is sent to a server \u2014 your browser just needs permission, and reminders show only while PaisaFlow is open in a tab.'}
               </Text>
               <Button
                 title={

@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {Linking, ScrollView, StyleSheet, Switch, View} from 'react-native';
+import {Linking, ScrollView, StyleSheet, View} from 'react-native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {
   ArrowLeft,
@@ -18,6 +18,7 @@ import {
   SectionHeader,
   Text,
   useToast,
+  Switch,
 } from '../../../design-system/components';
 import {useTheme} from '../../../design-system/theme';
 import type {AppTheme} from '../../../design-system/tokens';

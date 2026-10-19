@@ -46,6 +46,7 @@ import type {Category} from '../../../database/types';
 import {useDataVersionStore} from '../../../store/dataVersionStore';
 import {dayjs} from '../../../utils/date';
 import {hasSmsPermission, requestSmsPermission} from '../../../services/sms';
+import {supportsSmsInbox} from '../../../platform';
 import {ProviderError} from '../../../services/openrouter';
 import type {AiProviderErrorKind} from '../../../services/openrouter';
 import {friendlyMessageFor} from '../../ai-summary/hooks/useAiInsight';
@@ -570,7 +571,7 @@ export function ExpenseReviewScreen({navigation}: Props) {
     body = (
       <ErrorState message="Could not load detected expenses." onRetry={load} />
     );
-  } else if (permission === false) {
+  } else if (permission === false && supportsSmsInbox) {
     body = (
       <View style={styles.permissionWrap}>
         <EmptyState
@@ -600,26 +601,40 @@ export function ExpenseReviewScreen({navigation}: Props) {
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={hintHeader}
-        ListFooterComponent={historyFooter}
+        ListFooterComponent={supportsSmsInbox ? historyFooter : null}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={[theme.colors.primary]}
-            tintColor={theme.colors.primary}
-            accessibilityLabel="Scan SMS inbox"
-          />
+          supportsSmsInbox ? (
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={[theme.colors.primary]}
+              tintColor={theme.colors.primary}
+              accessibilityLabel="Scan SMS inbox"
+            />
+          ) : undefined
         }
         ListEmptyComponent={
-          <EmptyState
-            icon={MailQuestion}
-            title="Nothing to review"
-            message={
-              'Pull down to scan your SMS inbox, or paste a bank message manually.'
-            }
-            actionLabel="Scan SMS inbox"
-            onAction={handleRefresh}
-          />
+          supportsSmsInbox ? (
+            <EmptyState
+              icon={MailQuestion}
+              title="Nothing to review"
+              message={
+                'Pull down to scan your SMS inbox, or paste a bank message manually.'
+              }
+              actionLabel="Scan SMS inbox"
+              onAction={handleRefresh}
+            />
+          ) : (
+            <EmptyState
+              icon={ClipboardPaste}
+              title="Paste a bank alert"
+              message={
+                'SMS scanning needs the Android app. Here you can paste the text of a bank SMS or email alert — it is parsed in this browser and never uploaded.'
+              }
+              actionLabel="Paste a message"
+              onAction={() => setPasteOpen(true)}
+            />
+          )
         }
         showsVerticalScrollIndicator={false}
       />
@@ -630,7 +645,11 @@ export function ExpenseReviewScreen({navigation}: Props) {
     <AppScreen>
       <AppHeader
         title="Review detected"
-        subtitle="Approve to add as transactions"
+        subtitle={
+          supportsSmsInbox
+            ? 'Approve to add as transactions'
+            : 'Pasted alerts — approve to add as transactions'
+        }
         left={backButton}
         right={
           <View style={styles.headerActions}>
@@ -639,11 +658,13 @@ export function ExpenseReviewScreen({navigation}: Props) {
               onPress={() => setPasteOpen(true)}
               accessibilityLabel="Paste a bank message"
             />
-            <IconButton
-              icon={RefreshCw}
-              onPress={handleRefresh}
-              accessibilityLabel="Scan SMS inbox"
-            />
+            {supportsSmsInbox ? (
+              <IconButton
+                icon={RefreshCw}
+                onPress={handleRefresh}
+                accessibilityLabel="Scan SMS inbox"
+              />
+            ) : null}
           </View>
         }
       />

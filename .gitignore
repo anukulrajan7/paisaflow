@@ -78,3 +78,6 @@ yarn-error.log
 
 # Local credentials (Supabase etc.)
 src/config/supabase.ts
+
+# Web build output (vite)
+/dist/

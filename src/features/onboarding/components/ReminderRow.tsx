@@ -1,7 +1,7 @@
 import React, {useMemo} from 'react';
-import {StyleSheet, Switch, View} from 'react-native';
+import {StyleSheet, View} from 'react-native';
 
-import {Card, DateTimeField, Text} from '../../../design-system/components';
+import {Card, DateTimeField, Text, Switch} from '../../../design-system/components';
 import {useTheme} from '../../../design-system/theme';
 import type {AppTheme} from '../../../design-system/tokens';
 

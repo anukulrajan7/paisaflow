@@ -39,6 +39,7 @@ import {
   normalizeOpenRouterApiKey,
 } from '../../../services/openrouter';
 import {friendlyMessageFor} from '../../ai-summary/hooks/useAiInsight';
+import {hasHardwareBackedSecrets} from '../../../platform';
 
 type Props = NativeStackScreenProps<SettingsStackParamList, 'AiSettings'>;
 
@@ -178,8 +179,9 @@ export function AiSettingsScreen({navigation}: Props) {
         <Card>
           <Text variant="bodyMedium">OpenRouter API key</Text>
           <Text variant="caption" color="textSecondary" style={styles.cardHint}>
-            Stored only in your device&apos;s secure keychain. Get a key at
-            openrouter.ai/keys.
+            {hasHardwareBackedSecrets
+              ? 'Stored only in your device\u2019s secure keychain. Get a key at openrouter.ai/keys.'
+              : 'Stored encrypted in this browser\u2019s storage \u2014 never in the database. Get a key at openrouter.ai/keys.'}
           </Text>
 
           {hasKey ? (
@@ -319,9 +321,9 @@ export function AiSettingsScreen({navigation}: Props) {
           ]}>
           <TriangleAlert size={18} color={theme.colors.warning} />
           <Text variant="caption" color="textPrimary" style={styles.warningText}>
-            A mobile app cannot fully protect a client-side API key. Anyone who
-            extracts your key can spend your OpenRouter credits — use a key
-            with a spending limit and rotate it if you lose your device.
+            {hasHardwareBackedSecrets
+              ? 'A mobile app cannot fully protect a client-side API key. Anyone who extracts your key can spend your OpenRouter credits \u2014 use a key with a spending limit and rotate it if you lose your device.'
+              : 'Browser storage is less protected than a phone keystore: anyone with access to this browser profile could recover the key. Use a key with a low spending limit, and remove it from here on shared computers.'}
           </Text>
         </View>
 

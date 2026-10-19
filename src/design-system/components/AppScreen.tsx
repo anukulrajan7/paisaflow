@@ -5,6 +5,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {useTheme} from '../theme';
 import type {AppTheme} from '../tokens';
+import {CONTENT_MAX_WIDTH, useIsWideLayout} from '../layout';
 
 export interface AppScreenProps {
   children?: React.ReactNode;
@@ -19,7 +20,11 @@ export interface AppScreenProps {
   testID?: string;
 }
 
-/** Base screen container: themed background + safe-area handling. */
+/**
+ * Base screen container: themed background + safe-area handling. On wide
+ * web layouts the content column is capped and centered so screens read
+ * like a document rather than a stretched phone UI.
+ */
 export function AppScreen({
   children,
   padded = false,
@@ -32,11 +37,13 @@ export function AppScreen({
   const {theme} = useTheme();
   const styles = useMemo(() => createStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
+  const wide = useIsWideLayout();
 
   const body = (
     <View
       style={[
         styles.content,
+        wide && styles.wideContent,
         padded && {paddingHorizontal: theme.spacing.lg},
         contentStyle,
       ]}>
@@ -53,6 +60,7 @@ export function AppScreen({
           paddingTop: insets.top,
           paddingBottom: insets.bottom,
         },
+        wide && {paddingTop: theme.spacing.lg},
         style,
       ]}>
       {avoidKeyboard ? (
@@ -76,4 +84,9 @@ const createStyles = (theme: AppTheme) =>
     },
     flex: {flex: 1},
     content: {flex: 1},
+    wideContent: {
+      width: '100%',
+      maxWidth: CONTENT_MAX_WIDTH,
+      alignSelf: 'center',
+    },
   });

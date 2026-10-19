@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {StyleSheet, Switch, View} from 'react-native';
+import {StyleSheet, View} from 'react-native';
 import {Controller, useForm} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 
@@ -13,6 +13,7 @@ import {
   SelectField,
   Text,
   useToast,
+  Switch,
 } from '../../../design-system/components';
 import type {
   SegmentedOption,

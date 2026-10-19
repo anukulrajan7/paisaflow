@@ -20,6 +20,8 @@ export {DateTimeField} from './DateTimeField';
 export type {DateTimeFieldProps} from './DateTimeField';
 export {Chip} from './Chip';
 export type {ChipProps} from './Chip';
+export {Switch} from './Switch';
+export type {SwitchProps} from './Switch';
 export {SegmentedControl} from './SegmentedControl';
 export type {SegmentedControlProps, SegmentedOption} from './SegmentedControl';
 export {BottomSheet} from './BottomSheet';

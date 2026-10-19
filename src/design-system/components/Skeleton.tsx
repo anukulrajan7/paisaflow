@@ -4,6 +4,7 @@ import type {StyleProp, ViewStyle} from 'react-native';
 
 import {useTheme} from '../theme';
 import type {AppTheme} from '../tokens';
+import {isWeb} from '../../platform';
 
 export interface SkeletonProps {
   width?: number | `${number}%`;
@@ -31,12 +32,12 @@ export function Skeleton({
         Animated.timing(opacity, {
           toValue: 1,
           duration: 700,
-          useNativeDriver: true,
+          useNativeDriver: !isWeb,
         }),
         Animated.timing(opacity, {
           toValue: 0.5,
           duration: 700,
-          useNativeDriver: true,
+          useNativeDriver: !isWeb,
         }),
       ]),
     );

@@ -16,7 +16,11 @@ export interface AppHeaderProps {
   testID?: string;
 }
 
-/** In-screen header bar (native-stack headers are hidden app-wide). */
+/**
+ * In-screen header bar (native-stack headers are hidden app-wide). Side
+ * slots render only when provided so a plain title sits flush with the
+ * screen's content column.
+ */
 export function AppHeader({
   title,
   subtitle,
@@ -30,7 +34,7 @@ export function AppHeader({
 
   return (
     <View testID={testID} style={[styles.root, style]}>
-      <View style={styles.side}>{left}</View>
+      {left ? <View style={styles.side}>{left}</View> : null}
       <View style={styles.center}>
         <Text variant="title" numberOfLines={1}>
           {title}
@@ -41,7 +45,7 @@ export function AppHeader({
           </Text>
         ) : null}
       </View>
-      <View style={[styles.side, styles.right]}>{right}</View>
+      {right ? <View style={[styles.side, styles.right]}>{right}</View> : null}
     </View>
   );
 }

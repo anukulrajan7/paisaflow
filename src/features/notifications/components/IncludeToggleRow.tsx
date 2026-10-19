@@ -1,8 +1,8 @@
 import React, {useMemo} from 'react';
-import {StyleSheet, Switch, View} from 'react-native';
+import {StyleSheet, View} from 'react-native';
 import type {LucideIcon} from 'lucide-react-native';
 
-import {Text} from '../../../design-system/components';
+import {Text, Switch} from '../../../design-system/components';
 import {useTheme} from '../../../design-system/theme';
 import type {AppTheme} from '../../../design-system/tokens';
 

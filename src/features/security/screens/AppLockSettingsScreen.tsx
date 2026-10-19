@@ -35,6 +35,7 @@ import {
   verifyAppLockPin,
 } from '../../../services/security/applock';
 import {useAppLockStore} from '../../../store/appLockStore';
+import {hasHardwareBackedSecrets} from '../../../platform';
 import {LockIllustration} from '../components/LockIllustration';
 
 type Props = NativeStackScreenProps<SettingsStackParamList, 'AppLock'>;
@@ -251,15 +252,18 @@ export function AppLockSettingsScreen({navigation}: Props) {
                     color="textSecondary"
                     style={styles.cardHint}>
                     Require a {PIN_MIN_LENGTH}–{PIN_MAX_LENGTH} digit PIN to
-                    open PaisaFlow. The PIN never leaves this device — it is
-                    stored in the system keychain, not in the app&apos;s data.
+                    open PaisaFlow.{' '}
+                    {hasHardwareBackedSecrets
+                      ? 'The PIN never leaves this device \u2014 it is stored in the system keychain, not in the app\u2019s data.'
+                      : 'Only a salted hash of the PIN is kept in this browser. It hides the app from onlookers on a shared screen, but it does not encrypt the data on disk \u2014 anyone with access to this browser profile can still read it.'}
                   </Text>
                   <Text
                     variant="caption"
                     color="textMuted"
                     style={styles.cardHint}>
-                    There is no recovery: if you forget the PIN, you will need
-                    to reinstall the app.
+                    {hasHardwareBackedSecrets
+                      ? 'There is no recovery: if you forget the PIN, you will need to reinstall the app.'
+                      : 'There is no recovery: if you forget the PIN, clear this site\u2019s data in your browser (which also deletes your records \u2014 export a CSV first).'}
                   </Text>
                   <Button
                     title="Set PIN"

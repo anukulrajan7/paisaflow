@@ -13,7 +13,7 @@
  * the rest of the app never touches this screen's state.
  */
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {Pressable, ScrollView, StyleSheet, Switch, View} from 'react-native';
+import {Pressable, ScrollView, StyleSheet, View} from 'react-native';
 import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {
   ArrowLeft,
@@ -21,6 +21,7 @@ import {
   ChevronDown,
   ChevronRight,
   CloudUpload,
+  Smartphone,
   KeyRound,
   TriangleAlert,
 } from 'lucide-react-native';
@@ -38,6 +39,7 @@ import {
   SegmentedControl,
   Text,
   useToast,
+  Switch,
 } from '../../../design-system/components';
 import {useTheme} from '../../../design-system/theme';
 import type {AppTheme} from '../../../design-system/tokens';
@@ -59,6 +61,7 @@ import {
   runSync,
 } from '../../../services/supabase/syncService';
 import {dayjs} from '../../../utils/date';
+import {supportsCloudSync} from '../../../platform';
 
 type Props = NativeStackScreenProps<SettingsStackParamList, 'CloudSync'>;
 
@@ -338,6 +341,32 @@ export function CloudSyncScreen({navigation}: Props) {
         }
       />
       <OfflineBanner />
+      {!supportsCloudSync ? (
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            {paddingHorizontal: theme.spacing.lg},
+          ]}>
+          <Card>
+            <View style={styles.cardTitleRow}>
+              <Smartphone size={20} color={theme.colors.textSecondary} />
+              <Text variant="bodyMedium">
+                Cloud sync is available in the Android app
+              </Text>
+            </View>
+            <Text variant="body" color="textSecondary" style={styles.cardHint}>
+              The web version keeps everything in this browser and never
+              talks to a server. Backup and multi-device sync (via your own
+              Supabase project) run from the Android app, where credentials
+              live in the device keystore.
+            </Text>
+            <Text variant="caption" color="textMuted" style={styles.cardHint}>
+              To move data out of the browser, use Settings → Export
+              transactions (CSV).
+            </Text>
+          </Card>
+        </ScrollView>
+      ) : (
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -614,6 +643,7 @@ export function CloudSyncScreen({navigation}: Props) {
           read or write your rows. Setup help lives in supabase/README.md.
         </Text>
       </ScrollView>
+      )}
     </AppScreen>
   );
 }
