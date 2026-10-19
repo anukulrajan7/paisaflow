@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "types": ["vite/client"],
+    "jsx": "react-jsx"
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "web/**/*.ts", "web/**/*.tsx", "vite.config.mts"],
+  "exclude": ["**/node_modules", "**/Pods", "**/__tests__/**", "__mocks__", "dist"]
+}

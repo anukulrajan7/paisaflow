@@ -1,0 +1,71 @@
+/* Base document styles for the react-native-web app shell. RNW injects its own
+   reset; this only pins the page to the viewport and sets typography defaults
+   that RN components inherit. Colors come from the theme at runtime. */
+:root {
+  color-scheme: light dark;
+  --pf-bg: #f7f3ed;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --pf-bg: #16130f;
+  }
+}
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: var(--pf-bg);
+}
+body {
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    'Noto Sans',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior: none;
+}
+#root {
+  display: flex;
+  flex-direction: column;
+}
+/* RNW renders the root view with flex: 1 but needs a sized parent. */
+#root > div {
+  flex: 1;
+  min-height: 0;
+}
+/* Keyboard users get a visible focus ring; pointer users do not. */
+:focus-visible {
+  outline: 2px solid #b0512f;
+  outline-offset: 2px;
+}
+@media (prefers-color-scheme: dark) {
+  :focus-visible {
+    outline-color: #da8a63;
+  }
+}
+/* Native date/time inputs rendered by DateTimeField.web */
+input.pf-native-picker {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  padding: 0;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+input.pf-native-picker::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+}

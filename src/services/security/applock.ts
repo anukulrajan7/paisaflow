@@ -7,34 +7,24 @@
  *
  * The on/off flag is not sensitive, so it lives in app_settings via
  * settingsRepository (raw key 'appLockEnabled') — BootstrapGate reads it to
- * decide whether to gate the app.
+ * decide whether to gate the app. Shared rules live in applockCommon.ts;
+ * the web build swaps this file for applock.web.ts.
  */
 import * as Keychain from 'react-native-keychain';
 
-import {getSettingsRepository} from '../../database/repositories';
+import {validatePin} from './applockCommon';
+
+export {
+  APP_LOCK_ENABLED_KEY,
+  PIN_MAX_LENGTH,
+  PIN_MIN_LENGTH,
+  isAppLockEnabled,
+  setAppLockEnabled,
+  validatePin,
+} from './applockCommon';
 
 const APPLOCK_SERVICE = 'paisaflow-applock';
 const APPLOCK_USERNAME = 'applock';
-
-/** Raw app_settings key recording whether app lock is turned on. */
-export const APP_LOCK_ENABLED_KEY = 'appLockEnabled';
-
-export const PIN_MIN_LENGTH = 4;
-export const PIN_MAX_LENGTH = 6;
-
-/**
- * Validates a candidate PIN: 4–6 digits, nothing else.
- * Returns a user-facing error message, or null when valid.
- */
-export function validatePin(pin: string): string | null {
-  if (!/^\d+$/.test(pin)) {
-    return 'PIN must contain digits only.';
-  }
-  if (pin.length < PIN_MIN_LENGTH || pin.length > PIN_MAX_LENGTH) {
-    return `PIN must be ${PIN_MIN_LENGTH}–${PIN_MAX_LENGTH} digits.`;
-  }
-  return null;
-}
 
 /** Persist the app-lock PIN in the device keychain. */
 export async function setAppLockPin(pin: string): Promise<void> {
@@ -89,25 +79,4 @@ export async function deleteAppLockPin(): Promise<void> {
   } catch {
     // Nothing to clean up — treat as already removed.
   }
-}
-
-/** Whether app lock is turned on (app_settings flag, not the PIN itself). */
-export async function isAppLockEnabled(): Promise<boolean> {
-  try {
-    return (
-      (await getSettingsRepository().getValue(APP_LOCK_ENABLED_KEY)) === 'true'
-    );
-  } catch {
-    // Fail open: wrongly reporting "enabled" could gate the app behind a PIN
-    // that does not exist — a lockout. A missed lock is the safer failure.
-    return false;
-  }
-}
-
-/** Persist the app-lock on/off flag in app_settings. */
-export async function setAppLockEnabled(enabled: boolean): Promise<void> {
-  await getSettingsRepository().setValue(
-    APP_LOCK_ENABLED_KEY,
-    enabled ? 'true' : 'false',
-  );
 }

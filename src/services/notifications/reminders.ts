@@ -8,7 +8,6 @@ import type {TimestampTrigger} from '@notifee/react-native';
 
 import {getSettingsRepository} from '../../database/repositories';
 import type {ReminderSetting} from '../../database/repositories';
-import {useDataVersionStore} from '../../store/dataVersionStore';
 import {
   EVENING_REMINDER_ID,
   MORNING_REMINDER_ID,
@@ -16,6 +15,7 @@ import {
 } from './constants';
 import {composeReminderBody, fallbackReminderContent} from './compose';
 import type {ReminderContent, ReminderKind} from './compose';
+import {createReminderResync} from './resync';
 import {nextOccurrenceTimestamp} from './time';
 
 async function ensureReminderChannel(): Promise<void> {
@@ -118,10 +118,7 @@ export async function requestNotificationPermission(): Promise<boolean> {
   }
 }
 
-const RESYNC_DEBOUNCE_MS = 2000;
-
-let dataSyncUnsubscribe: (() => void) | null = null;
-let resyncTimer: ReturnType<typeof setTimeout> | null = null;
+const resync = createReminderResync(syncRemindersFromSettings);
 
 /**
  * Re-run syncRemindersFromSettings() (debounced, 2s) whenever financial data
@@ -130,30 +127,10 @@ let resyncTimer: ReturnType<typeof setTimeout> | null = null;
  * and must never surface errors to the caller.
  */
 export function subscribeReminderSyncToDataChanges(): void {
-  if (dataSyncUnsubscribe) {
-    return;
-  }
-  dataSyncUnsubscribe = useDataVersionStore.subscribe(() => {
-    if (resyncTimer) {
-      clearTimeout(resyncTimer);
-    }
-    resyncTimer = setTimeout(() => {
-      resyncTimer = null;
-      syncRemindersFromSettings().catch(() => {
-        // Best-effort — a failed resync leaves the previous schedule intact.
-      });
-    }, RESYNC_DEBOUNCE_MS);
-  });
+  resync.subscribe();
 }
 
 /** Stop the data-version resync subscription (dev/test hook). */
 export function unsubscribeReminderSyncFromDataChanges(): void {
-  if (resyncTimer) {
-    clearTimeout(resyncTimer);
-    resyncTimer = null;
-  }
-  if (dataSyncUnsubscribe) {
-    dataSyncUnsubscribe();
-    dataSyncUnsubscribe = null;
-  }
+  resync.unsubscribe();
 }
