@@ -1,0 +1,14 @@
+# Keep the web image build context small — only src/, web/ and the configs
+# listed in Dockerfile.web are needed.
+node_modules
+android
+ios
+dist
+.git
+.gradle
+coverage
+__tests__
+__mocks__
+*.md
+*.log
+.DS_Store

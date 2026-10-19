@@ -1,0 +1,25 @@
+# PaisaFlow web (landing + /app) — static container behind the host Caddy.
+#   docker compose -f docker-compose.web.yml up -d --build
+# Caddy on the host proxies https://paisaflow.anukulraj.com -> 127.0.0.1:18110
+services:
+  paisaflow-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    image: paisaflow-web:latest
+    container_name: paisaflow-web
+    ports:
+      - "127.0.0.1:18110:80"
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
